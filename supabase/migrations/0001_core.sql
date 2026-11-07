@@ -1,4 +1,4 @@
--- Zinema OS — core schema (draft v0.1, for review; not yet applied anywhere)
+-- Zinema OS — core schema. Applied to Supabase project ZINEMA DASHBOARD (qdnexjevlnpcydfbioug) on 2026-11-07.
 -- Postgres / Supabase. Files live in Google Drive; this DB stores references + workflow state.
 
 create extension if not exists "pgcrypto";
