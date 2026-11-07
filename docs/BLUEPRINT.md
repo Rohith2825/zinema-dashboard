@@ -307,6 +307,7 @@ Note: PDL also offers **Lyricmatic** lyric videos. Count it as an option for the
 | 2026-11-07 | Sign-in | **Google sign-in only** (Supabase Auth, Google provider). No email/password. Everyone has a Google account, so Drive folders are shared per page to members' Google emails automatically when roles are granted |
 | 2026-11-07 | Notifications | **In-app + email only** for now. No WhatsApp/Slack |
 | 2026-11-07 | Royalty splits & credits | Stored per song now in `song_rights`, readable/editable **only by rights owners**. Org admins, including the zinema4music account, are **not** owners and can't see them, on the web or via Claude. Owners are seeded once from the list the business gives; after that only an owner can add or remove owners. Contracts live in an owners-only Drive folder (`Zinema OS/_Rights/`), not in song folders. The shared activity log records that rights changed, never the numbers |
+| 2026-11-07 | Released catalogue | 21 released songs imported (12 via **DistroKid — legacy, no longer used**, 9 via **PDL — current**). Distributor + legacy flag on each distribution record. Song codes count per page (TAM-0001…) |
 | 2026-11-07 | Fifth page | **Zinema.music Indie** (not "India"): its own team, approvers and 3+3 per song, like every other page |
 
 ## 14. Open questions (need your call)
