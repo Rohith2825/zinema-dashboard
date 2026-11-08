@@ -310,6 +310,8 @@ Note: PDL also offers **Lyricmatic** lyric videos. Count it as an option for the
 | 2026-11-07 | Released catalogue | 21 released songs imported (12 via **DistroKid — legacy, no longer used**, 9 via **PDL — current**). Distributor + legacy flag on each distribution record. Song codes count per page (TAM-0001…) |
 | 2026-11-07 | Pages live today | Only **Tamil, Hindi and Spiritual** are active. Marathi and Indie exist in the system but have no songs yet |
 | 2026-11-07 | Fifth page | **Zinema.music Indie** (not "India"): its own team, approvers and 3+3 per song, like every other page |
+| 2026-11-08 | Formats | A song has many **formats** (vertical, carousel, lyric video, flagship MV, AI MV, visualizer, image-only video, audio-only), each with its own checklist, owner, planned/live dates, Drive folder and live URL — also **after release**. Each format is backed by one deliverable, so file submit/review still works. Every song gets 6 mandatory formats (3 carousels + 3 verticals). Video-kind items are no longer per-page templates; the video gate needs ≥1 approved/live video-stage format. Schema: `supabase/migrations/0014_song_formats.sql` |
+| 2026-11-08 | Brand | Black background, white "zinema" wordmark, orange square accent **#fc7c0f**; app icon = white Z on black. Only `/login` is indexable |
 
 ## 14. Open questions (need your call)
 

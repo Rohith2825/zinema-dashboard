@@ -13,7 +13,8 @@ export default function CalendarPage({ searchParams }: PageProps<"/calendar">) {
 }
 
 const KINDS = [
-  { key: "song_release", label: "Song releases", dot: "bg-violet-600", chip: "bg-violet-100 text-violet-900" },
+  { key: "song_release", label: "Song releases", dot: "bg-brand-500", chip: "bg-brand-100 text-brand-900" },
+  { key: "format", label: "Formats", dot: "bg-violet-500", chip: "bg-violet-100 text-violet-900" },
   { key: "content", label: "Content", dot: "bg-sky-500", chip: "bg-sky-100 text-sky-900" },
   { key: "task_due", label: "Task due", dot: "bg-amber-500", chip: "bg-amber-100 text-amber-900" },
   { key: "deliverable_due", label: "File due", dot: "bg-zinc-400", chip: "bg-zinc-100 text-zinc-700" },
@@ -47,7 +48,7 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
     .order("at");
   if (page) q = q.eq("page_id", page.id);
   if (view === "releases") q = q.eq("kind", "song_release");
-  if (view === "content") q = q.in("kind", ["content"]);
+  if (view === "content") q = q.in("kind", ["content", "format"]);
   const { data } = await q;
   const events = (data ?? []) as Event[];
 
@@ -91,7 +92,7 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
           <Link href={link({ month: prev })} className="btn-ghost !px-2">←</Link>
           <h2 className="w-44 text-center font-medium">{monthName}</h2>
           <Link href={link({ month: next })} className="btn-ghost !px-2">→</Link>
-          <Link href={link({ month: todayStr.slice(0, 7) })} className="ml-1 text-sm text-violet-700">Today</Link>
+          <Link href={link({ month: todayStr.slice(0, 7) })} className="ml-1 text-sm text-brand-700">Today</Link>
         </div>
         <div className="hidden gap-3 text-xs text-zinc-600 md:flex">
           {KINDS.map((k) => (
@@ -112,7 +113,7 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
             const list = byDay.get(key) ?? [];
             return (
               <div key={key} className={`min-h-28 border-b border-r border-zinc-100 p-1.5 ${inMonth ? "" : "bg-zinc-50/60 text-zinc-400"}`}>
-                <div className={`mb-1 text-xs ${key === todayStr ? "inline-block rounded-full bg-violet-600 px-1.5 text-white" : ""}`}>{d.getUTCDate()}</div>
+                <div className={`mb-1 text-xs ${key === todayStr ? "inline-block rounded-full bg-brand-500 px-1.5 text-black" : ""}`}>{d.getUTCDate()}</div>
                 <div className="space-y-1">
                   {list.slice(0, 4).map((e, i) => <Chip key={i} e={e} code={codeOf(e.song_id)} />)}
                   {list.length > 4 && <p className="text-[11px] text-zinc-500">+{list.length - 4} more</p>}
@@ -143,7 +144,7 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
 }
 
 function Chip({ e, code }: { e: Event; code?: string }) {
-  const k = KINDS.find((x) => x.key === e.kind) ?? KINDS[3];
+  const k = KINDS.find((x) => x.key === e.kind) ?? KINDS[KINDS.length - 1];
   const body = (
     <span className={`block truncate rounded px-1.5 py-0.5 text-[11px] ${k.chip} ${e.state === "live" || e.state === "done" ? "opacity-60 line-through" : ""}`}>
       {e.title}

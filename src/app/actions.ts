@@ -209,38 +209,41 @@ export async function addContentSlot(_: ActionState, fd: FormData): Promise<Acti
   return { ok: "Added to the content calendar." };
 }
 
+/** Sets planned dates on the 6 mandatory formats (3 carousels + 3 verticals) around the release date. */
 export async function generateContentPlan(_: ActionState, fd: FormData): Promise<ActionState> {
-  const { supabase, uid } = await ctx();
+  const { supabase } = await ctx();
   const songId = str(fd, "song_id")!;
   const { data: song } = await supabase
     .from("songs")
-    .select("page_id, planned_release_date, deliverables(id, kind, slot)")
+    .select("planned_release_date, song_formats(id, mandatory, deliverable:deliverables(kind, slot))")
     .eq("id", songId)
     .single();
   if (!song?.planned_release_date) return fail("Set a planned release date first.");
-  const ds = (song.deliverables ?? []) as { id: string; kind: string; slot: number }[];
-  const d = (kind: string, slot: number) => ds.find((x) => x.kind === kind && x.slot === slot)?.id ?? null;
-  const plan: [number, string, string, number][] = [
-    [-7, "Teaser vertical", "vertical", 1],
-    [-3, "Pre-release carousel", "carousel", 1],
-    [0, "Release-day vertical", "vertical", 2],
-    [3, "Lyrics carousel", "carousel", 2],
-    [7, "Follow-up vertical", "vertical", 3],
-    [14, "Behind-the-song carousel", "carousel", 3],
+  type F = { id: string; mandatory: boolean; deliverable: { kind: string; slot: number } | null };
+  const formats = (song.song_formats ?? []) as unknown as F[];
+  const plan: [number, string, number][] = [
+    [-7, "vertical", 1],
+    [-3, "carousel", 1],
+    [0, "vertical", 2],
+    [3, "carousel", 2],
+    [7, "vertical", 3],
+    [14, "carousel", 3],
   ];
   const base = new Date(`${song.planned_release_date}T18:00:00+05:30`).getTime();
-  const rows = plan.map(([offset, label, kind, slot]) => ({
-    song_id: songId,
-    page_id: song.page_id,
-    label,
-    planned_at: new Date(base + offset * 86400000).toISOString(),
-    deliverable_id: d(kind, slot),
-    created_by: uid,
-  }));
-  const { error } = await supabase.from("content_slots").insert(rows);
-  if (error) return fail(friendly(error));
+  let n = 0;
+  for (const [offset, kind, slot] of plan) {
+    const f = formats.find((x) => x.mandatory && x.deliverable?.kind === kind && x.deliverable.slot === slot);
+    if (!f) continue;
+    const { error } = await supabase
+      .from("song_formats")
+      .update({ planned_at: new Date(base + offset * 86400000).toISOString() })
+      .eq("id", f.id);
+    if (error) return fail(friendly(error));
+    n++;
+  }
+  if (!n) return fail("This song has no mandatory carousel/vertical formats.");
   refresh();
-  return { ok: "Added 3 carousels + 3 verticals around the release date." };
+  return { ok: `Planned ${n} formats around the release date.` };
 }
 
 export async function removeContentSlot(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -258,6 +261,87 @@ export async function markSlotLive(_: ActionState, fd: FormData): Promise<Action
     .update({ went_live_at: new Date().toISOString(), live_url: str(fd, "live_url") })
     .eq("id", str(fd, "id")!);
   if (error) return fail(friendly(error));
+  refresh();
+  return undefined;
+}
+
+// ─────────── Formats ───────────
+const istDate = (d: string | null) => (d ? new Date(`${d}T18:00:00+05:30`).toISOString() : null);
+
+export async function addFormat(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const kind = str(fd, "kind");
+  if (!kind) return fail("Pick a format type.");
+  const { error } = await supabase.rpc("add_song_format", { p_song: str(fd, "song_id")!, p_kind: kind, p_label: str(fd, "label") });
+  if (error) return fail(friendly(error));
+  refresh();
+  return { ok: "Format added." };
+}
+
+export async function updateFormat(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const folder = str(fd, "drive_folder_url");
+  if (folder && !parseDriveId(folder)) return fail("Drive folder must be a Google Drive link.");
+  const liveUrl = str(fd, "live_url");
+  if (liveUrl && !/^https?:\/\//.test(liveUrl)) return fail("Live URL must start with https://");
+  const status = str(fd, "status") ?? "planned";
+  // The go-live date only counts while the format is Live (the DB marks a dated format as live).
+  let wentLive = status === "live" ? istDate(str(fd, "went_live_at")) : null;
+  if (status === "live" && !wentLive) wentLive = new Date().toISOString();
+  const { error } = await supabase
+    .from("song_formats")
+    .update({
+      label: str(fd, "label") ?? undefined,
+      status,
+      owner_id: str(fd, "owner_id"),
+      planned_at: istDate(str(fd, "planned_at")),
+      went_live_at: wentLive,
+      live_url: liveUrl,
+      drive_folder_url: folder,
+      notes: str(fd, "notes"),
+    })
+    .eq("id", str(fd, "format_id")!);
+  if (error) return fail(friendly(error));
+  refresh();
+  return { ok: "Saved." };
+}
+
+export async function toggleChecklistItem(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase, uid } = await ctx();
+  const done = str(fd, "done") === "1";
+  const { error } = await supabase
+    .from("format_checklist")
+    .update(done ? { done_at: new Date().toISOString(), done_by: uid } : { done_at: null, done_by: null })
+    .eq("id", str(fd, "id")!);
+  if (error) return fail(friendly(error));
+  refresh();
+  return undefined;
+}
+
+export async function addChecklistItem(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const label = str(fd, "label");
+  if (!label) return fail("Write the item first.");
+  const formatId = str(fd, "format_id")!;
+  const { count } = await supabase.from("format_checklist").select("id", { count: "exact", head: true }).eq("format_id", formatId);
+  const { error } = await supabase.from("format_checklist").insert({ format_id: formatId, label, position: (count ?? 0) + 1 });
+  if (error) return fail(friendly(error));
+  refresh();
+  return { ok: "Added." };
+}
+
+export async function removeFormat(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const { data: f, error } = await supabase
+    .from("song_formats")
+    .delete()
+    .eq("id", str(fd, "format_id")!)
+    .eq("mandatory", false)
+    .select("deliverable_id")
+    .maybeSingle();
+  if (error) return fail(friendly(error));
+  if (!f) return fail("Mandatory formats can't be removed — set them to Dropped instead.");
+  if (f.deliverable_id) await supabase.from("deliverables").delete().eq("id", f.deliverable_id);
   refresh();
   return undefined;
 }

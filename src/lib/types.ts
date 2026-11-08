@@ -4,7 +4,9 @@ export type TaskStatus = "todo" | "doing" | "blocked" | "done";
 export type VersionStatus = "submitted" | "in_review" | "changes_requested" | "approved" | "superseded";
 export type DeliverableKind =
   | "lyrics" | "sound_brief" | "rough_mix" | "song_metadata" | "master_wav" | "stems" | "artwork"
-  | "lyric_video" | "visualizer" | "music_video" | "carousel" | "vertical";
+  | "lyric_video" | "visualizer" | "music_video" | "carousel" | "vertical"
+  | "ai_music_video" | "static_image" | "audio_only";
+export type FormatStatus = "planned" | "in_progress" | "in_review" | "approved" | "live" | "dropped";
 
 export const STAGES: { key: StageKey; label: string }[] = [
   { key: "lyrics", label: "Lyrics" },
@@ -28,10 +30,23 @@ export const KIND_LABEL: Record<DeliverableKind, string> = {
   artwork: "Artwork",
   lyric_video: "Lyric video",
   visualizer: "Visualizer",
-  music_video: "Music video",
+  music_video: "Flagship music video",
   carousel: "Carousel",
   vertical: "Vertical",
+  ai_music_video: "AI music video",
+  static_image: "Image only (static video)",
+  audio_only: "Audio only (no visual)",
 };
+
+export const FORMAT_STATUSES: { key: FormatStatus; label: string }[] = [
+  { key: "planned", label: "Planned" },
+  { key: "in_progress", label: "In progress" },
+  { key: "in_review", label: "In review" },
+  { key: "approved", label: "Approved" },
+  { key: "live", label: "Live" },
+  { key: "dropped", label: "Dropped" },
+];
+export const formatStatusLabel = (k: string) => FORMAT_STATUSES.find((s) => s.key === k)?.label ?? k;
 
 export const ROLES: { key: PageRole; label: string }[] = [
   { key: "page_admin", label: "Page admin" },

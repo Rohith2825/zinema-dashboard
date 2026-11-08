@@ -22,6 +22,7 @@ type SongRow = {
   page: { name: string; slug: string } | null;
   deliverables: { kind: string; stage: StageKey; required: boolean; assignee_id: string | null; deliverable_versions: { status: string }[] }[];
   distribution_records: { isrc: string; distributor: string; legacy: boolean }[];
+  song_formats: { status: string }[];
 };
 
 async function Board({ searchParams }: Pick<PageProps<"/board">, "searchParams">) {
@@ -32,7 +33,7 @@ async function Board({ searchParams }: Pick<PageProps<"/board">, "searchParams">
   let q = s.supabase
     .from("songs")
     .select(
-      "id, code, title, current_stage, planned_release_date, metadata, page:pages(name, slug), deliverables(kind, stage, required, assignee_id, deliverable_versions(status)), distribution_records(isrc, distributor, legacy)",
+      "id, code, title, current_stage, planned_release_date, metadata, page:pages(name, slug), deliverables(kind, stage, required, assignee_id, deliverable_versions(status)), distribution_records(isrc, distributor, legacy), song_formats(status)",
     )
     .is("archived_at", null)
     .order("code");
@@ -80,10 +81,12 @@ function SongCard({ song, showPage }: { song: SongRow; showPage: boolean }) {
   const promo = (kind: string) =>
     song.deliverables.filter((d) => d.kind === kind && d.deliverable_versions.some((v) => v.status === "approved")).length;
   const dist = song.distribution_records[0];
+  const formats = song.song_formats.filter((f) => f.status !== "dropped");
+  const formatsLive = formats.filter((f) => f.status === "live").length;
   const live = song.current_stage === "live";
 
   return (
-    <Link href={`/songs/${song.code}`} className="block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm hover:border-violet-300">
+    <Link href={`/songs/${song.code}`} className="block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm hover:border-brand-300">
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[11px] text-zinc-500">{song.code}</span>
         {showPage && <Badge>{pageShort(song.page?.name)}</Badge>}
@@ -101,6 +104,11 @@ function SongCard({ song, showPage }: { song: SongRow; showPage: boolean }) {
             <Badge tone={promo("carousel") >= 3 ? "green" : "amber"}>C {promo("carousel")}/3</Badge>
             <Badge tone={promo("vertical") >= 3 ? "green" : "amber"}>V {promo("vertical")}/3</Badge>
           </>
+        )}
+        {formats.length > 0 && (
+          <Badge tone={formatsLive === formats.length ? "green" : "zinc"}>
+            Formats {formatsLive}/{formats.length} live
+          </Badge>
         )}
         {dist && (
           <Badge tone={dist.legacy ? "zinc" : "violet"}>
