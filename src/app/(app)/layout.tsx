@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { SidebarUserSkeleton } from "@/components/skeletons";
+import { NavProgress } from "@/components/nav-progress";
 import Link from "next/link";
 import { Nav, NavLinks } from "@/components/nav";
 import { getSession } from "@/lib/session";
@@ -8,6 +9,9 @@ import { shortName } from "@/lib/types";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-1 flex-col md:flex-row">
+      <Suspense fallback={null}>
+        <NavProgress />
+      </Suspense>
       <aside className="border-b border-neutral-800 bg-black text-neutral-200 md:sticky md:top-0 md:h-screen md:w-56 md:shrink-0 md:border-b-0 md:border-r md:border-neutral-800">
         <div className="flex items-center justify-between gap-3 px-4 py-3 md:block md:py-5">
           <Link href="/board" className="flex items-end gap-2" aria-label="Zinema OS home">
