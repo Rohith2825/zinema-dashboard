@@ -7,10 +7,12 @@ import { shortName } from "@/lib/types";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-1 flex-col md:flex-row">
-      <aside className="border-b border-zinc-200 bg-white md:sticky md:top-0 md:h-screen md:w-56 md:shrink-0 md:border-b-0 md:border-r">
+      <aside className="border-b border-neutral-800 bg-black text-neutral-200 md:sticky md:top-0 md:h-screen md:w-56 md:shrink-0 md:border-b-0 md:border-r md:border-neutral-800">
         <div className="flex items-center justify-between gap-3 px-4 py-3 md:block md:py-5">
-          <Link href="/board" className="block text-lg font-semibold tracking-tight">
-            Zinema <span className="text-violet-600">OS</span>
+          <Link href="/board" className="flex items-end gap-2" aria-label="Zinema OS home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/zinema-wordmark.svg" alt="zinema" width={104} height={26} />
+            <span className="pb-0.5 text-xs font-semibold tracking-widest text-brand-500">OS</span>
           </Link>
         </div>
         <div className="overflow-x-auto px-2 pb-2 md:pb-0">
@@ -41,14 +43,14 @@ async function NavWithCount() {
 async function UserBox() {
   const s = await getSession();
   return (
-    <div className="text-xs text-zinc-500">
-      <p className="truncate font-medium text-zinc-800">{shortName(s.profile)}</p>
+    <div className="text-xs text-neutral-400">
+      <p className="truncate font-medium text-neutral-100">{shortName(s.profile)}</p>
       <p className="truncate">
         {s.isAdmin ? "Admin" : "Member"}
         {s.isOwner ? " · Owner" : ""}
       </p>
       <form action="/auth/signout" method="post" className="mt-2">
-        <button className="underline hover:text-zinc-800">Sign out</button>
+        <button className="underline hover:text-white">Sign out</button>
       </form>
     </div>
   );

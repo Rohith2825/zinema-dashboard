@@ -89,7 +89,7 @@ async function Inbox() {
                 return (
                   <li key={n.id} className={`flex justify-between gap-3 py-2 ${n.read_at ? "text-zinc-500" : ""}`}>
                     <span>
-                      {!n.read_at && <span className="mr-2 inline-block h-2 w-2 rounded-full bg-violet-600" />}
+                      {!n.read_at && <span className="mr-2 inline-block h-2 w-2 rounded-full bg-brand-600" />}
                       {n.kind === "mention" ? "You were tagged: " : n.kind === "task_assigned" ? "New task: " : ""}
                       {song ? <Link href={`/songs/${song.code}`} className="hover:underline">{n.body}</Link> : n.body}
                     </span>

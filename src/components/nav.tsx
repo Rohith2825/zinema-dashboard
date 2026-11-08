@@ -26,12 +26,12 @@ export function NavLinks({ path, unread = 0 }: { path: string; unread?: number }
             key={l.href}
             href={l.href}
             className={`flex items-center justify-between rounded-md px-3 py-2 text-sm ${
-              active ? "bg-violet-50 font-medium text-violet-800" : "text-zinc-600 hover:bg-zinc-100"
+              active ? "bg-neutral-900 font-medium text-white shadow-[inset_3px_0_0_#fc7c0f]" : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
             }`}
           >
             {l.label}
             {l.href === "/inbox" && unread > 0 && (
-              <span className="ml-2 rounded-full bg-violet-600 px-1.5 text-[11px] font-semibold text-white">{unread}</span>
+              <span className="ml-2 rounded-full bg-brand-500 px-1.5 text-[11px] font-semibold text-black">{unread}</span>
             )}
           </Link>
         );

@@ -61,7 +61,7 @@ export function TaskBoard({ tasks }: { tasks: TaskCard[] }) {
                     <div className="mt-1.5 flex flex-wrap gap-x-2 text-xs text-zinc-500">
                       <span>{t.assignee ?? "Unassigned"}</span>
                       {t.due && <span className={t.overdue ? "font-medium text-red-600" : ""}>due {t.due}</span>}
-                      {t.songCode && <Link href={`/songs/${t.songCode}`} className="text-violet-700">{t.songCode}</Link>}
+                      {t.songCode && <Link href={`/songs/${t.songCode}`} className="text-brand-700">{t.songCode}</Link>}
                       <span>{t.page}</span>
                     </div>
                     {/* Fallback for touch screens: move with a select */}

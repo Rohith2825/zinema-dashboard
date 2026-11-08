@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { SITE_URL } from "@/lib/site";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -12,10 +13,21 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const DESCRIPTION =
+  "Zinema OS — the song pipeline, approvals and release calendar for Zinema Music: Tamil, Hindi, Marathi, Spiritual and Indie.";
+
 export const metadata: Metadata = {
-  title: "Zinema OS",
-  description: "Song pipeline, approvals and release calendar for Zinema Music",
+  metadataBase: new URL(SITE_URL),
+  title: { default: "Zinema OS", template: "%s · Zinema OS" },
+  description: DESCRIPTION,
+  applicationName: "Zinema OS",
+  openGraph: { type: "website", siteName: "Zinema Music", title: "Zinema OS", description: DESCRIPTION, url: "/login" },
+  twitter: { card: "summary_large_image", title: "Zinema OS", description: DESCRIPTION },
+  // Private workspace: only /login is indexable (set on that page).
+  robots: { index: false, follow: false },
 };
+
+export const viewport: Viewport = { themeColor: "#000000" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
