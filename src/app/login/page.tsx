@@ -14,7 +14,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       <div className="w-full max-w-sm space-y-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-8 text-neutral-100">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/zinema-wordmark.svg" alt="zinema" width={156} height={38} />
+          <img src="/brand/zinema-logo.png" alt="Zinema Music — It Just Hits" width={220} height={81} />
           <h1 className="mt-4 text-lg font-semibold">Zinema OS</h1>
           <p className="mt-1 text-sm text-neutral-400">Sign in with your Google account.</p>
         </div>

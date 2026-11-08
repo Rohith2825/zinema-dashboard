@@ -11,7 +11,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <div className="flex items-center justify-between gap-3 px-4 py-3 md:block md:py-5">
           <Link href="/board" className="flex items-end gap-2" aria-label="Zinema OS home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/zinema-wordmark.svg" alt="zinema" width={104} height={26} />
+            <img src="/brand/zinema-wordmark.png" alt="Zinema Music" width={112} height={27} />
             <span className="pb-0.5 text-xs font-semibold tracking-widest text-brand-500">OS</span>
           </Link>
         </div>

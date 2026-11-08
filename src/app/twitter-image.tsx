@@ -4,6 +4,6 @@ export const alt = ogAlt;
 export const size = ogSize;
 export const contentType = "image/png";
 
-export default function Image() {
+export default async function Image() {
   return ogCard();
 }
