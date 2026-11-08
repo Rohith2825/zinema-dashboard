@@ -1,19 +1,23 @@
 import { Suspense } from "react";
-import { addMember, removeMember } from "@/app/actions";
-import { ActionForm, Submit } from "@/components/action-form";
-import { Badge, PageTitle, pageShort } from "@/components/ui";
+import Link from "next/link";
+import { removeMember } from "@/app/actions";
+import { ActionForm } from "@/components/action-form";
+import { RolePicker, type PickerPage, type PickerPerson } from "@/components/role-picker";
+import { TeamSkeleton } from "@/components/skeletons";
+import { Avatar, Badge, PageDot, PageTitle, pageShort } from "@/components/ui";
 import { getSession } from "@/lib/session";
 import { ROLES, shortName, type PageRole, type Profile } from "@/lib/types";
 
-export default function TeamPage() {
+export default function TeamPage({ searchParams }: PageProps<"/team">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading team…</p>}>
-      <Team />
+    <Suspense fallback={<TeamSkeleton />}>
+      <Team searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Team() {
+async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) {
+  const sp = await searchParams;
   const s = await getSession();
   const [{ data: peopleData }, { data: memberData }, { data: ownersData }] = await Promise.all([
     s.supabase.from("profiles").select("id, full_name, email, is_org_admin").order("full_name"),
@@ -25,80 +29,119 @@ async function Team() {
   const owners = new Set((ownersData ?? []).map((o) => o.user_id));
   const adminPages = s.pages.filter((p) => s.roleOn(p.id, ["page_admin"]));
   const roleLabel = (r: string) => ROLES.find((x) => x.key === r)?.label ?? r;
+  const pageOf = (id: string) => s.pages.find((p) => p.id === id);
+  const needRole = people.filter((p) => !p.is_org_admin && !members.some((m) => m.user_id === p.id));
+
+  const pickerPeople: PickerPerson[] = people.map((p) => ({
+    id: p.id,
+    name: shortName(p),
+    email: p.email,
+    isAdmin: p.is_org_admin,
+    roles: members.filter((m) => m.user_id === p.id).map((m) => ({ pageId: m.page_id, role: m.role })),
+  }));
+  const pickerPages: PickerPage[] = adminPages.map((p) => ({
+    id: p.id,
+    name: pageShort(p.name),
+    prefix: p.code_prefix,
+    members: new Set(members.filter((m) => m.page_id === p.id).map((m) => m.user_id)).size,
+  }));
 
   return (
     <>
-      <PageTitle title="Team" sub="People sign in with Google once; then give them a role on a page." />
+      <PageTitle
+        title="Team"
+        sub={
+          <>
+            {people.length} {people.length === 1 ? "person" : "people"}
+            {needRole.length > 0 && <> · <span className="font-medium text-amber-700">{needRole.length} waiting for a role</span></>}
+            {" · "}people appear here after signing in with Google once.
+          </>
+        }
+      />
 
-      <div className="card overflow-x-auto">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs text-zinc-500">
-            <tr>
-              <th className="px-4 py-2 font-medium">Person</th>
-              <th className="px-4 py-2 font-medium">Access</th>
-              <th className="px-4 py-2 font-medium">Page roles</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100">
-            {people.map((p) => {
-              const mine = members.filter((m) => m.user_id === p.id);
-              return (
-                <tr key={p.id} className="align-top">
-                  <td className="px-4 py-3">
-                    <p className="font-medium">{shortName(p)}</p>
-                    <p className="text-xs text-zinc-500">{p.email}</p>
-                  </td>
-                  <td className="space-x-1 px-4 py-3">
-                    {p.is_org_admin && <Badge tone="violet">Admin · all pages</Badge>}
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+        {/* Roster */}
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {people.map((p) => {
+            const mine = members.filter((m) => m.user_id === p.id);
+            const byPage = [...new Set(mine.map((m) => m.page_id))];
+            const fresh = mine.length === 0 && !p.is_org_admin;
+            return (
+              <li key={p.id} className={`card p-4 ${fresh ? "border-amber-300" : ""}`}>
+                <div className="flex items-center gap-3">
+                  <Avatar name={p.full_name} email={p.email} size={44} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">
+                      {shortName(p)}
+                      {p.id === s.user.id && <span className="ml-1.5 text-xs font-normal text-zinc-400">(you)</span>}
+                    </p>
+                    <p className="truncate text-xs text-zinc-500">{p.email}</p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    {p.is_org_admin && <Badge tone="violet">Admin</Badge>}
                     {owners.has(p.id) && <Badge tone="green">Owner</Badge>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {mine.map((m) => (
-                        <span key={m.page_id + m.role} className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs">
-                          {pageShort(s.pages.find((x) => x.id === m.page_id)?.name)} · {roleLabel(m.role)}
-                          {s.roleOn(m.page_id, ["page_admin"]) && (
-                            <ActionForm action={removeMember} confirm="Remove this role?">
-                              <input type="hidden" name="user_id" value={m.user_id} />
-                              <input type="hidden" name="page_id" value={m.page_id} />
-                              <input type="hidden" name="role" value={m.role} />
-                              <button className="text-zinc-400 hover:text-red-600" aria-label="Remove role">✕</button>
-                            </ActionForm>
-                          )}
-                        </span>
-                      ))}
-                      {mine.length === 0 && !p.is_org_admin && <span className="text-xs text-zinc-400">No access yet</span>}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                  </div>
+                </div>
 
-      {adminPages.length > 0 && (
-        <section className="card mt-4 max-w-2xl p-4">
-          <h2 className="mb-3 font-medium">Give someone a role</h2>
-          <ActionForm action={addMember} className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr_auto]">
-            <select name="user_id" required className="input" defaultValue="">
-              <option value="" disabled>Person…</option>
-              {people.map((p) => <option key={p.id} value={p.id}>{shortName(p)} ({p.email})</option>)}
-            </select>
-            <select name="page_id" required className="input" defaultValue="">
-              <option value="" disabled>Page…</option>
-              {adminPages.map((p) => <option key={p.id} value={p.id}>{pageShort(p.name)}</option>)}
-            </select>
-            <select name="role" required className="input" defaultValue="maker">
-              {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
-            </select>
-            <Submit>Add</Submit>
-          </ActionForm>
-          <p className="mt-3 text-xs text-zinc-500">
-            Makers submit files · Checkers approve or request changes (never their own) · Approvers move songs to the next stage · Page admins manage roles.
-          </p>
-        </section>
-      )}
+                <div className="mt-3 space-y-1.5">
+                  {p.is_org_admin && <p className="text-xs text-zinc-500">Full access to every page.</p>}
+                  {byPage.map((pid) => {
+                    const pg = pageOf(pid);
+                    const canEdit = s.roleOn(pid, ["page_admin"]);
+                    return (
+                      <div key={pid} className="flex flex-wrap items-center gap-1.5">
+                        <span className="flex w-24 items-center gap-1.5 text-xs font-medium text-zinc-700">
+                          <PageDot prefix={pg?.code_prefix} />
+                          {pageShort(pg?.name)}
+                        </span>
+                        {mine.filter((m) => m.page_id === pid).map((m) => (
+                          <span key={m.role} className="inline-flex items-center gap-1 rounded-full bg-zinc-100 py-0.5 pl-2.5 pr-1.5 text-xs">
+                            {roleLabel(m.role)}
+                            {canEdit && (
+                              <ActionForm action={removeMember} confirm={`Remove ${shortName(p)} as ${roleLabel(m.role)} on ${pageShort(pg?.name)}?`}>
+                                <input type="hidden" name="user_id" value={m.user_id} />
+                                <input type="hidden" name="page_id" value={m.page_id} />
+                                <input type="hidden" name="role" value={m.role} />
+                                <button className="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-red-100 hover:text-red-600" aria-label={`Remove ${roleLabel(m.role)} role`}>
+                                  ✕
+                                </button>
+                              </ActionForm>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })}
+                  {fresh && (
+                    <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                      <span>Signed in, but has no role yet.</span>
+                      {adminPages.length > 0 && (
+                        <Link href={`/team?person=${p.id}#give-role`} scroll={false} className="font-medium text-brand-700 hover:underline">
+                          Give a role →
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Give a role */}
+        {adminPages.length > 0 && (
+          <section id="give-role" className="card p-4 xl:sticky xl:top-6">
+            <h2 className="font-medium">Give someone a role</h2>
+            <p className="mb-4 mt-0.5 text-xs text-zinc-500">One person can hold different roles on different pages.</p>
+            <RolePicker
+              key={typeof sp.person === "string" ? sp.person : "none"}
+              people={pickerPeople}
+              pages={pickerPages}
+              defaultPerson={typeof sp.person === "string" ? sp.person : undefined}
+            />
+          </section>
+        )}
+      </div>
     </>
   );
 }

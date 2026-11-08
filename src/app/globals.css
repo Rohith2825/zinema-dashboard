@@ -48,3 +48,37 @@ body {
 .label {
   @apply mb-1 block text-xs font-medium text-zinc-600;
 }
+
+@layer components {
+/* ───────── Skeleton loaders (brand shimmer) ───────── */
+.skel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #e9e9ec;
+}
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  translate: -100% 0;
+  background: linear-gradient(90deg, transparent, rgba(252, 124, 15, 0.1) 35%, rgba(255, 255, 255, 0.75) 50%, rgba(252, 124, 15, 0.1) 65%, transparent);
+  animation: skel-shimmer 1.5s ease-in-out infinite;
+}
+.skel-dark { background: #1c1c1c; }
+.skel-dark::after { background: linear-gradient(90deg, transparent, rgba(252, 124, 15, 0.18) 50%, transparent); }
+@keyframes skel-shimmer { to { translate: 100% 0; } }
+
+/* Tiny equalizer used as the loading mark */
+.eq-loader { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+.eq-loader i { width: 3px; height: 100%; border-radius: 1px; background: #fc7c0f; transform-origin: bottom; animation: eq-bounce 0.9s ease-in-out infinite alternate; }
+.eq-loader i:nth-child(2) { animation-delay: -0.3s; }
+.eq-loader i:nth-child(3) { animation-delay: -0.6s; }
+.eq-loader i:nth-child(4) { animation-delay: -0.15s; }
+@keyframes eq-bounce { from { transform: scaleY(0.2); } to { transform: scaleY(1); } }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel::after, .eq-loader i { animation: none; }
+}

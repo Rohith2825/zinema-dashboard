@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { SidebarUserSkeleton } from "@/components/skeletons";
 import Link from "next/link";
 import { Nav, NavLinks } from "@/components/nav";
 import { getSession } from "@/lib/session";
@@ -21,14 +22,16 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           </Suspense>
         </div>
         <div className="hidden px-4 py-4 md:absolute md:bottom-0 md:block md:w-56">
-          <Suspense fallback={null}>
+          <Suspense fallback={<SidebarUserSkeleton />}>
             <UserBox />
           </Suspense>
         </div>
       </aside>
       <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
-        <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
-          <Gate>{children}</Gate>
+        {/* Each page shows its own skeleton; the access check overlays the page instead of blocking it. */}
+        {children}
+        <Suspense fallback={null}>
+          <AccessGate />
         </Suspense>
       </main>
     </div>
@@ -56,18 +59,20 @@ async function UserBox() {
   );
 }
 
-async function Gate({ children }: { children: React.ReactNode }) {
+async function AccessGate() {
   const s = await getSession();
   if (!s.hasAccess) {
     return (
-      <div className="mx-auto mt-16 max-w-md rounded-xl border border-amber-300 bg-amber-50 p-6 text-amber-900">
+      <div className="fixed inset-0 z-50 flex items-start justify-center bg-zinc-50/95 px-4 backdrop-blur-sm md:left-56">
+      <div className="mx-auto mt-24 max-w-md rounded-xl border border-amber-300 bg-amber-50 p-6 text-amber-900">
         <h2 className="font-medium">You&apos;re signed in, but not on any page yet</h2>
         <p className="mt-1 text-sm">Ask a Zinema admin to add {s.user.email} to Tamil, Hindi or Spiritual.</p>
         <form action="/auth/signout" method="post" className="mt-4">
           <button className="text-sm underline">Sign out</button>
         </form>
       </div>
+      </div>
     );
   }
-  return <>{children}</>;
+  return null;
 }

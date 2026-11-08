@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { BoardSkeleton } from "@/components/skeletons";
 import Link from "next/link";
 import { getSession, pageBySlug } from "@/lib/session";
 import { STAGES, type StageKey } from "@/lib/types";
@@ -6,7 +7,7 @@ import { Badge, PageTabs, PageTitle, pageShort } from "@/components/ui";
 
 export default function BoardPage({ searchParams }: PageProps<"/board">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading board…</p>}>
+    <Suspense fallback={<BoardSkeleton />}>
       <Board searchParams={searchParams} />
     </Suspense>
   );

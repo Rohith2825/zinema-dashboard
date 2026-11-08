@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { ListSkeleton } from "@/components/skeletons";
 import Link from "next/link";
 import { markAllRead } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
@@ -8,7 +9,7 @@ import { KIND_LABEL, fmtDate, type DeliverableKind } from "@/lib/types";
 
 export default function InboxPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+    <Suspense fallback={<ListSkeleton label="Loading inbox" />}>
       <Inbox />
     </Suspense>
   );

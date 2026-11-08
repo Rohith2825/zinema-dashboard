@@ -11,3 +11,10 @@ export function parseDriveId(url: string): string | null {
     return null;
   }
 }
+
+/** Thumbnail URL for a Drive image (the file must be shared as "anyone with the link"). */
+export function driveThumb(url: string | null | undefined, width = 600): string | null {
+  if (!url) return null;
+  const id = parseDriveId(url);
+  return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w${width}` : null;
+}

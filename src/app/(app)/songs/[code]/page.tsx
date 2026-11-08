@@ -1,22 +1,25 @@
 import { Suspense } from "react";
+import { SongSkeleton } from "@/components/skeletons";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   addChecklistItem, addComment, addContentSlot, addCredit, addDistribution, addFormat, advanceSong, assignDeliverable, createTask,
   generateContentPlan, markSlotLive, removeContentSlot, removeCredit, removeFormat, reviewVersion, saveRights, submitVersion,
-  toggleChecklistItem, updateFormat, updateSong,
+  toggleChecklistItem, unpublishFormat, publishFormat, updateFormat, updateSong,
 } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
-import { Badge, Empty, VERSION_LABEL, VERSION_TONE, pageShort, type Tone } from "@/components/ui";
+import { Cover } from "@/components/cover";
+import { driveThumb } from "@/lib/drive";
+import { Badge, Empty, PageDot, VERSION_LABEL, VERSION_TONE, pageShort, type Tone } from "@/components/ui";
 import { getSession, type Session } from "@/lib/session";
 import {
-  FORMAT_STATUSES, KIND_LABEL, STAGES, TZ, fmtDate, formatStatusLabel, shortName, stageLabel,
-  type DeliverableKind, type FormatStatus, type Profile, type StageKey,
+  FORMAT_PLATFORMS, FORMAT_STATUSES, KIND_LABEL, PLATFORM_LABEL, STAGES, TZ, fmtDate, formatStatusLabel, shortName, stageLabel,
+  type DeliverableKind, type FormatStatus, type Platform, type Profile, type StageKey,
 } from "@/lib/types";
 
 export default function SongPage({ params }: PageProps<"/songs/[code]">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading song…</p>}>
+    <Suspense fallback={<SongSkeleton />}>
       <Song params={params} />
     </Suspense>
   );
@@ -37,6 +40,7 @@ type Format = {
   owner_id: string | null; planned_at: string | null; went_live_at: string | null; live_url: string | null;
   drive_folder_url: string | null; notes: string | null;
   format_checklist: { id: string; label: string; position: number; done_at: string | null; done_by: string | null }[];
+  format_publications: { id: string; platform: Platform; url: string | null; published_at: string; published_by: string | null }[];
 };
 
 const FORMAT_TONE: Record<FormatStatus, Tone> = {
@@ -51,7 +55,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
 
   const { data: song } = await db
     .from("songs")
-    .select("id, code, title, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug)")
+    .select("id, code, title, artists, cover_url, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix)")
     .eq("code", decodeURIComponent(code).toUpperCase())
     .maybeSingle();
   if (!song) notFound();
@@ -69,7 +73,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
     db.from("profiles").select("id, full_name, email, is_org_admin").order("full_name"),
     s.isOwner ? db.from("song_rights").select("splits, notes, contract_drive_url, updated_at").eq("song_id", song.id).maybeSingle() : Promise.resolve({ data: null }),
     db.from("song_formats")
-      .select("id, deliverable_id, kind, label, status, mandatory, owner_id, planned_at, went_live_at, live_url, drive_folder_url, notes, format_checklist(id, label, position, done_at, done_by)")
+      .select("id, deliverable_id, kind, label, status, mandatory, owner_id, planned_at, went_live_at, live_url, drive_folder_url, notes, format_checklist(id, label, position, done_at, done_by), format_publications(id, platform, url, published_at, published_by)")
       .eq("song_id", song.id).order("created_at"),
     db.from("format_types").select("kind, label, stage, position").order("position"),
   ]);
@@ -86,7 +90,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
   // Files that belong to a format are shown inside that format, not in the stage list.
   const deliverables = allDeliverables.filter((d) => !formatDeliverables.has(d.id));
   const meta = (song.metadata ?? {}) as { language?: string; imported?: boolean; style?: string };
-  const page = song.page as unknown as { name: string; slug: string } | null;
+  const page = song.page as unknown as { name: string; slug: string; code_prefix: string } | null;
   const canWork = s.canWork(song.page_id);
   const canCheck = s.canCheck(song.page_id);
   const canApprove = s.canApprove(song.page_id);
@@ -98,16 +102,20 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
       <div>
         <Link href={`/board${page ? `?page=${page.slug}` : ""}`} className="text-sm text-zinc-500 hover:text-zinc-800">← Board</Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+          <Cover src={driveThumb(song.cover_url, 400)} code={song.code} title={song.title} prefix={page?.code_prefix} className="w-24 shrink-0 rounded-xl shadow-sm sm:w-28" />
           <div>
             <p className="font-mono text-xs text-zinc-500">{song.code}</p>
             <h1 className="text-2xl font-semibold tracking-tight">{song.title}</h1>
+            <p className={`text-sm ${song.artists ? "text-zinc-600" : "italic text-zinc-400"}`}>{song.artists || "Artists not added yet"}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <Badge>{pageShort(page?.name)}</Badge>
+              <Badge><PageDot prefix={page?.code_prefix} className="mr-1" />{pageShort(page?.name)}</Badge>
               {meta.language && <Badge>{meta.language}</Badge>}
               {meta.style && <Badge>{meta.style}</Badge>}
               <Badge tone="violet">{stageLabel(song.current_stage)}</Badge>
               {song.planned_release_date && <Badge tone="amber">Release {fmtDate(song.planned_release_date)}</Badge>}
             </div>
+          </div>
           </div>
           {canApprove && song.current_stage !== "live" && (
             <ActionForm action={advanceSong} className="text-right">
@@ -193,6 +201,14 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
               <div>
                 <label className="label">Title</label>
                 <input name="title" defaultValue={song.title} className="input" disabled={!canWork} />
+              </div>
+              <div>
+                <label className="label">Artists</label>
+                <input name="artists" defaultValue={song.artists ?? ""} placeholder="e.g. Sid Sriram, Shreya Ghoshal" className="input" disabled={!canWork} />
+              </div>
+              <div>
+                <label className="label">Cover art (Drive link, shared “anyone with the link”)</label>
+                <input name="cover_url" defaultValue={song.cover_url ?? ""} placeholder="https://drive.google.com/file/d/…" className="input" disabled={!canWork} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -401,6 +417,7 @@ function describe(entity: string, action: string, diff: Record<string, string> |
   if (entity === "tasks") return "added a task";
   if (entity === "song_rights") return "updated rights";
   if (entity === "song_formats") return action === "insert" ? "added a format" : "updated a format";
+  if (entity === "format_publications") return `marked a format published on ${PLATFORM_LABEL[(diff?.platform ?? "other") as Platform] ?? diff?.platform}`;
   return `${action} ${entity}`;
 }
 
@@ -534,6 +551,7 @@ function FormatsSection({
                     <Badge tone={FORMAT_TONE[f.status]}>{formatStatusLabel(f.status)}</Badge>
                   </span>
                   <span className="text-xs text-zinc-500">
+                    {f.format_publications.length > 0 && <>{f.format_publications.length} posted · </>}
                     {total > 0 && <>{done}/{total} done · </>}
                     {f.owner_id && <>{who(f.owner_id)} · </>}
                     {f.went_live_at ? <>live {fmtDate(f.went_live_at, { day: "numeric", month: "short" })}</> : f.planned_at ? <>planned {fmtDate(f.planned_at, { day: "numeric", month: "short" })}</> : "no date"}
@@ -578,6 +596,8 @@ function FormatsSection({
                       </ActionForm>
                     )}
                   </div>
+
+                  <Publications f={f} canWork={canWork} who={who} />
 
                   {/* Files (submit / review via the linked deliverable) */}
                   {d && (
@@ -661,5 +681,66 @@ function FormatsSection({
         </ActionForm>
       )}
     </section>
+  );
+}
+
+/** "Published on socials": one row per platform this format usually goes to, ticked when posted. */
+function Publications({ f, canWork, who }: { f: Format; canWork: boolean; who: (id: string | null) => string }) {
+  const suggested = FORMAT_PLATFORMS[f.kind] ?? [];
+  const extra = f.format_publications.map((p) => p.platform).filter((p) => !suggested.includes(p));
+  const platforms = [...suggested, ...extra];
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date());
+  return (
+    <div>
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">Published on</h3>
+      <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200 bg-white">
+        {platforms.map((pl) => {
+          const pub = f.format_publications.find((p) => p.platform === pl);
+          return (
+            <li key={pl} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${pub ? "bg-brand-500 text-black" : "border border-zinc-300 text-transparent"}`}>✓</span>
+              <span className="w-24 font-medium">{PLATFORM_LABEL[pl]}</span>
+              {pub ? (
+                <>
+                  <span className="text-xs text-zinc-500">
+                    {fmtDate(pub.published_at, { day: "numeric", month: "short", year: "numeric" })}
+                    {pub.published_by && <> · {who(pub.published_by)}</>}
+                  </span>
+                  {pub.url && <a href={pub.url} target="_blank" rel="noreferrer" className="text-xs text-brand-700 underline">View post ↗</a>}
+                  {canWork && (
+                    <ActionForm action={unpublishFormat} className="ml-auto" confirm={`Unmark ${PLATFORM_LABEL[pl]}?`}>
+                      <input type="hidden" name="id" value={pub.id} />
+                      <Submit className="text-xs text-zinc-400 hover:text-red-600">Undo</Submit>
+                    </ActionForm>
+                  )}
+                </>
+              ) : canWork ? (
+                <ActionForm action={publishFormat} className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                  <input type="hidden" name="format_id" value={f.id} />
+                  <input type="hidden" name="platform" value={pl} />
+                  <input name="url" placeholder="Post link (optional)" className="input h-7 min-w-0 flex-1 !py-0 text-xs" />
+                  <input name="published_at" type="date" defaultValue={today} className="input h-7 w-32 !py-0 text-xs" aria-label="Published on" />
+                  <Submit className="btn-ghost !px-2 !py-0.5 text-xs">Mark published</Submit>
+                </ActionForm>
+              ) : (
+                <span className="text-xs text-zinc-400">Not yet</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {canWork && (
+        <ActionForm action={publishFormat} resetOnSuccess className="mt-2 flex flex-wrap items-center gap-2">
+          <input type="hidden" name="format_id" value={f.id} />
+          <select name="platform" className="input h-8 w-36 !py-0 text-xs" defaultValue="other" aria-label="Another platform">
+            {(Object.keys(PLATFORM_LABEL) as Platform[]).filter((p) => !platforms.includes(p)).map((p) => (
+              <option key={p} value={p}>{PLATFORM_LABEL[p]}</option>
+            ))}
+          </select>
+          <input name="url" placeholder="Post link" className="input h-8 min-w-0 flex-1 !py-0 text-xs" />
+          <Submit className="btn-ghost !px-2 !py-1 text-xs">+ Another platform</Submit>
+        </ActionForm>
+      )}
+    </div>
   );
 }

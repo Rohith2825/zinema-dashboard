@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { FormSkeleton } from "@/components/skeletons";
 import { createSong } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
 import { PageTitle } from "@/components/ui";
@@ -6,7 +7,7 @@ import { getSession, pageBySlug } from "@/lib/session";
 
 export default function NewSongPage({ searchParams }: PageProps<"/songs/new">) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<FormSkeleton label="Loading" />}>
       <NewSong searchParams={searchParams} />
     </Suspense>
   );

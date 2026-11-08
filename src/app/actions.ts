@@ -59,9 +59,17 @@ export async function updateSong(_: ActionState, fd: FormData): Promise<ActionSt
   const id = str(fd, "song_id");
   const { data: song } = await supabase.from("songs").select("metadata").eq("id", id!).single();
   const metadata = { ...((song?.metadata as Record<string, unknown>) ?? {}), language: str(fd, "language") };
+  const cover = str(fd, "cover_url");
+  if (cover && !parseDriveId(cover)) return fail("Cover art must be a Google Drive link.");
   const { error } = await supabase
     .from("songs")
-    .update({ title: str(fd, "title") ?? undefined, planned_release_date: str(fd, "planned_release_date"), metadata })
+    .update({
+      title: str(fd, "title") ?? undefined,
+      planned_release_date: str(fd, "planned_release_date"),
+      metadata,
+      artists: str(fd, "artists"),
+      cover_url: cover,
+    })
     .eq("id", id!);
   if (error) return fail(friendly(error));
   refresh();
@@ -342,6 +350,33 @@ export async function removeFormat(_: ActionState, fd: FormData): Promise<Action
   if (error) return fail(friendly(error));
   if (!f) return fail("Mandatory formats can't be removed — set them to Dropped instead.");
   if (f.deliverable_id) await supabase.from("deliverables").delete().eq("id", f.deliverable_id);
+  refresh();
+  return undefined;
+}
+
+export async function publishFormat(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const url = str(fd, "url");
+  if (url && !/^https?:\/\//.test(url)) return fail("Link must start with https://");
+  const day = str(fd, "published_at");
+  const { error } = await supabase.from("format_publications").upsert(
+    {
+      format_id: str(fd, "format_id")!,
+      platform: str(fd, "platform")!,
+      url,
+      published_at: day ? new Date(`${day}T18:00:00+05:30`).toISOString() : new Date().toISOString(),
+    },
+    { onConflict: "format_id,platform" },
+  );
+  if (error) return fail(friendly(error));
+  refresh();
+  return { ok: "Marked as published." };
+}
+
+export async function unpublishFormat(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("format_publications").delete().eq("id", str(fd, "id")!);
+  if (error) return fail(friendly(error));
   refresh();
   return undefined;
 }

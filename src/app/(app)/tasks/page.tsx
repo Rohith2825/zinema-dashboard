@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { TasksSkeleton } from "@/components/skeletons";
 import Link from "next/link";
 import { createTask } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
@@ -9,7 +10,7 @@ import { fmtDate, shortName, type Profile, type TaskStatus } from "@/lib/types";
 
 export default function TasksPage({ searchParams }: PageProps<"/tasks">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading tasks…</p>}>
+    <Suspense fallback={<TasksSkeleton />}>
       <Tasks searchParams={searchParams} />
     </Suspense>
   );

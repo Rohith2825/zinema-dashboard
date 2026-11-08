@@ -48,12 +48,12 @@ export const FORMAT_STATUSES: { key: FormatStatus; label: string }[] = [
 ];
 export const formatStatusLabel = (k: string) => FORMAT_STATUSES.find((s) => s.key === k)?.label ?? k;
 
-export const ROLES: { key: PageRole; label: string }[] = [
-  { key: "page_admin", label: "Page admin" },
-  { key: "approver", label: "Approver" },
-  { key: "checker", label: "Checker" },
-  { key: "maker", label: "Maker" },
-  { key: "viewer", label: "Viewer" },
+export const ROLES: { key: PageRole; label: string; desc: string; icon: string }[] = [
+  { key: "maker", label: "Maker", desc: "Submits files and works through format checklists", icon: "♪" },
+  { key: "checker", label: "Checker", desc: "Approves files or asks for changes — never their own", icon: "✓" },
+  { key: "approver", label: "Approver", desc: "Moves songs to the next stage once the gate is met", icon: "→" },
+  { key: "page_admin", label: "Page admin", desc: "Everything above, plus managing the page's team", icon: "★" },
+  { key: "viewer", label: "Viewer", desc: "Sees songs, calendars and files; can't change anything", icon: "◉" },
 ];
 
 export const TASK_COLUMNS: { key: TaskStatus; label: string }[] = [
@@ -77,3 +77,47 @@ export function shortName(p?: { full_name?: string | null; email?: string | null
   if (!p) return "—";
   return p.full_name || p.email?.split("@")[0] || "—";
 }
+
+export type Platform =
+  | "instagram" | "youtube" | "youtube_shorts" | "facebook" | "x" | "threads" | "snapchat"
+  | "sharechat" | "moj" | "josh" | "spotify" | "apple_music" | "jiosaavn" | "other";
+
+export const PLATFORM_LABEL: Record<Platform, string> = {
+  instagram: "Instagram",
+  youtube: "YouTube",
+  youtube_shorts: "YT Shorts",
+  facebook: "Facebook",
+  x: "X",
+  threads: "Threads",
+  snapchat: "Snapchat",
+  sharechat: "ShareChat",
+  moj: "Moj",
+  josh: "Josh",
+  spotify: "Spotify",
+  apple_music: "Apple Music",
+  jiosaavn: "JioSaavn",
+  other: "Other",
+};
+
+/** Where each format usually goes. "Other" is always offered too. */
+export const FORMAT_PLATFORMS: Partial<Record<DeliverableKind, Platform[]>> = {
+  vertical: ["instagram", "youtube_shorts", "facebook", "snapchat", "moj", "josh", "sharechat"],
+  carousel: ["instagram", "facebook", "threads", "x"],
+  lyric_video: ["youtube", "facebook", "instagram"],
+  music_video: ["youtube", "facebook", "instagram"],
+  ai_music_video: ["youtube", "facebook", "instagram"],
+  visualizer: ["youtube", "facebook", "instagram"],
+  static_image: ["youtube", "facebook"],
+  audio_only: ["spotify", "apple_music", "jiosaavn", "youtube"],
+};
+
+export const FORMAT_ICON: Partial<Record<DeliverableKind, string>> = {
+  vertical: "▯",
+  carousel: "▤",
+  lyric_video: "¶",
+  music_video: "▶",
+  ai_music_video: "✦",
+  visualizer: "◎",
+  static_image: "▣",
+  audio_only: "♪",
+};

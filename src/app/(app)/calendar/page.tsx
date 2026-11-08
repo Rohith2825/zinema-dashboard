@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { CalendarSkeleton } from "@/components/skeletons";
 import Link from "next/link";
 import { getSession, pageBySlug } from "@/lib/session";
 import { TZ } from "@/lib/types";
@@ -6,7 +7,7 @@ import { PageTabs, PageTitle } from "@/components/ui";
 
 export default function CalendarPage({ searchParams }: PageProps<"/calendar">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading calendar…</p>}>
+    <Suspense fallback={<CalendarSkeleton />}>
       <Calendar searchParams={searchParams} />
     </Suspense>
   );
