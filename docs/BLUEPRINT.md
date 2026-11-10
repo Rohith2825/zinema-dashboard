@@ -31,10 +31,10 @@ Organisation: Zinema Music
      ├─ zinema.music.hindi
      ├─ zinema.music.marathi
      ├─ zinema.music.spiritual
-     └─ zinema.music.indie      (independent / non-film music)
+     └─ zinema.music.community  (Community page — formerly Indie)
 ```
 
-- A **song belongs to exactly one home page**. It can have **post targets** on other pages (e.g. a Tamil song also shared on Indie). Each target page's approver must approve posts going to *their* page.
+- A **song belongs to exactly one home page**. It can have **post targets** on other pages (e.g. a Tamil song also shared on Community). Each target page's approver must approve posts going to *their* page.
 - **Roles are per page** (a person can be maker on Tamil and checker on Hindi):
 
 | Role | Can |
@@ -99,7 +99,7 @@ Zinema OS/
          ├─ 07_Posted/         (exact files that went live + caption.txt)
          └─ _Audits/           (audit reports as PDFs/MD, written by Claude)
 ```
-- `song_code` = page prefix + sequence (`TAM-0042`, `HIN-0007`, `MAR-…`, `SPI-…`, `IND-…`). Human-friendly, used in chat with Claude ("status of TAM-42?").
+- `song_code` = page prefix + sequence (`TAM-0042`, `HIN-0007`, `MAR-…`, `SPI-…`, `COM-…`). Human-friendly, used in chat with Claude ("status of TAM-42?").
 - Folder IDs stored on the song / stage rows, so the app deep-links straight into the right folder.
 
 ### Link hygiene (the important part)
@@ -128,7 +128,7 @@ Principle: **deterministic numbers from code, judgement from Claude, decision fr
 | **orchestrator** | SQL views: stuck items, SLA breaches, missing deliverables | Daily stand-up per page: "TAM-42 waiting on checker Priya for 3 days; HIN-07 missing V3" | posted to dashboard + optionally WhatsApp/Email |
 | **performance-pull** | Treg YT/IG insights calls on schedule | Weekly "what worked" per page, feeds back into lyric-virality & caption-writer prompts | metrics rows + insight |
 
-Thresholds live in Supabase (`audit_thresholds` per page/deliverable), **not** hard-coded in the skill — so Spiritual can have a different loudness target than a dance track on Indie.
+Thresholds live in Supabase (`audit_thresholds` per page/deliverable), **not** hard-coded in the skill — so Spiritual can have a different loudness target than a dance track on Community.
 
 > Mix-audit default targets (to confirm with your engineer): WAV 44.1 kHz or 48 kHz, 24-bit, stereo; true-peak ≤ −1.0 dBTP; integrated loudness in a configured window (e.g. −14 to −9 LUFS depending on genre); 0 clipped samples; head silence < 0.5 s; phase correlation > 0.
 
@@ -263,7 +263,7 @@ Flow: `post` (draft) → caption-writer drafts → **target-page approver approv
 | **P4 — Posting (parked)** | Captions, approval, publisher, posted-archive | Approved carousel goes live on the right page at the right time, no human clicks |
 | **P5 — Learn loop** | Metrics pull, performance dashboards, weekly insights, Higgsfield-assisted creation | Per-page "what worked" feeding into skills |
 
-Start each phase with **one page (Tamil)** end-to-end, then switch on Hindi/Marathi/Spiritual/Indie — they are config, not code.
+Start each phase with **one page (Tamil)** end-to-end, then switch on Hindi/Marathi/Spiritual/Community — they are config, not code.
 
 ---
 
@@ -314,6 +314,7 @@ Note: PDL also offers **Lyricmatic** lyric videos. Count it as an option for the
 | 2026-11-08 | Brand | Black background, white "zinema" wordmark, orange square accent **#fc7c0f**; app icon = white Z on black. Only `/login` is indexable |
 | 2026-11-08 | Catalog | `/catalog`: every song as a card (cover art from a Drive link, artist line, page, release date, ISRC, formats). Team fills in cover + artists on the song page. Each format records where it's published (Instagram, YouTube, Shorts, Spotify…, with link + date); the first publication marks the format live. Released songs start with a live "Audio (DSPs)" format. Schema: `0015_catalog_and_publications.sql` |
 | 2026-11-10 | Ownership | Every song is labelled **Zinema Original** (made and owned by Zinema) or **Community** (released with Zinema, not owned by it), independent of its page. Used to classify royalty splits. Default Original; all 21 imported songs start as Original. Schema: `0016_song_ownership.sql` |
+| 2026-11-10 | Indie → Community | The Indie page is now **Zinema.music Community** (slug `community`, codes `COM-0001…`). Older log rows below that say "Indie" mean this page. Schema: `0017_rename_indie_to_community.sql` |
 
 ## 14. Open questions (need your call)
 

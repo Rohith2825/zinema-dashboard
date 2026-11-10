@@ -78,7 +78,7 @@ export const PAGE_COLOR: Record<string, string> = {
   HIN: "#e11d48",
   MAR: "#0ea5e9",
   SPI: "#a855f7",
-  IND: "#22c55e",
+  COM: "#22c55e",
 };
 export const pageColor = (prefix?: string | null) => PAGE_COLOR[prefix ?? ""] ?? "#a1a1aa";
 

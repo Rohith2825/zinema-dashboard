@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 const DESCRIPTION =
-  "Zinema OS — the song pipeline, approvals and release calendar for Zinema Music: Tamil, Hindi, Marathi, Spiritual and Indie.";
+  "Zinema OS — the song pipeline, approvals and release calendar for Zinema Music: Tamil, Hindi, Marathi, Spiritual and Community.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

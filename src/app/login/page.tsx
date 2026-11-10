@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/login" },
 };
 
-const PAGES = ["Tamil", "Hindi", "Marathi", "Spiritual", "Indie"];
+const PAGES = ["Tamil", "Hindi", "Marathi", "Spiritual", "Community"];
 
 // Equalizer bars: deterministic "random" timings so server and client render the same markup.
 const BARS = Array.from({ length: 64 }, (_, i) => {

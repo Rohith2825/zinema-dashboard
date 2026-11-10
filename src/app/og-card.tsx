@@ -3,10 +3,10 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 export const ogSize = { width: 1200, height: 630 };
-export const ogAlt = "Zinema Music — It Just Hits. Zinema OS for Tamil, Hindi, Marathi, Spiritual and Indie";
+export const ogAlt = "Zinema Music — It Just Hits. Zinema OS for Tamil, Hindi, Marathi, Spiritual and Community";
 
 const ORANGE = "#fc7c0f";
-const PAGES = ["Tamil", "Hindi", "Marathi", "Spiritual", "Indie"];
+const PAGES = ["Tamil", "Hindi", "Marathi", "Spiritual", "Community"];
 
 // Deterministic equalizer heights, taller towards the middle (same feel as the login page).
 const BARS = Array.from({ length: 60 }, (_, i) => {
