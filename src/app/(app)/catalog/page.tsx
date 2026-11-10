@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Cover } from "@/components/cover";
 import { CatalogSkeleton } from "@/components/skeletons";
-import { Empty, PageDot, PageTabs, PageTitle, pageShort } from "@/components/ui";
+import { Empty, OwnershipTag, PageDot, PageTabs, PageTitle, pageShort } from "@/components/ui";
 import { driveThumb } from "@/lib/drive";
 import { getSession, pageBySlug } from "@/lib/session";
 import { FORMAT_ICON, KIND_LABEL, fmtDate, stageLabel, type DeliverableKind, type FormatStatus, type StageKey } from "@/lib/types";
@@ -16,7 +16,7 @@ export default function CatalogPage({ searchParams }: PageProps<"/catalog">) {
 }
 
 type Row = {
-  id: string; code: string; title: string; artists: string | null; cover_url: string | null; current_stage: StageKey;
+  id: string; code: string; title: string; artists: string | null; cover_url: string | null; ownership: string; current_stage: StageKey;
   planned_release_date: string | null; metadata: { language?: string } | null;
   page: { name: string; slug: string; code_prefix: string } | null;
   distribution_records: { isrc: string | null; release_date: string | null; distributor: string; legacy: boolean }[];
@@ -36,15 +36,17 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
   const page = pageBySlug(s.pages, sp.page);
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const view = VIEWS.find((v) => v.key === sp.view)?.key ?? "all";
+  const own = sp.own === "original" || sp.own === "community" ? sp.own : undefined;
 
   let query = s.supabase
     .from("songs")
     .select(
-      "id, code, title, artists, cover_url, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix), distribution_records(isrc, release_date, distributor, legacy), song_formats(kind, status, format_publications(platform))",
+      "id, code, title, artists, cover_url, ownership, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix), distribution_records(isrc, release_date, distributor, legacy), song_formats(kind, status, format_publications(platform))",
     )
     .is("archived_at", null)
     .order("code");
   if (page) query = query.eq("page_id", page.id);
+  if (own) query = query.eq("ownership", own);
   if (q) query = query.or(`title.ilike.%${q.replace(/[%,()]/g, "")}%,code.ilike.%${q.replace(/[%,()]/g, "")}%,artists.ilike.%${q.replace(/[%,()]/g, "")}%`);
   const { data, error } = await query;
   let songs = (data ?? []) as unknown as Row[];
@@ -52,12 +54,13 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
   if (view === "in_progress") songs = songs.filter((x) => x.current_stage !== "live");
   if (view === "missing") songs = songs.filter((x) => !x.artists || !x.cover_url);
 
-  const extra = { q: q || undefined, view: view === "all" ? undefined : view };
-  const href = (v: string) => {
+  const extra = { q: q || undefined, view: view === "all" ? undefined : view, own };
+  const href = (v: string, o: string | undefined = own) => {
     const p = new URLSearchParams();
     if (page) p.set("page", page.slug);
     if (q) p.set("q", q);
     if (v !== "all") p.set("view", v);
+    if (o) p.set("own", o);
     const str = p.toString();
     return str ? `/catalog?${str}` : "/catalog";
   };
@@ -71,6 +74,7 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
           <form action="/catalog" className="flex gap-2">
             {page && <input type="hidden" name="page" value={page.slug} />}
             {view !== "all" && <input type="hidden" name="view" value={view} />}
+            {own && <input type="hidden" name="own" value={own} />}
             <input name="q" defaultValue={q} placeholder="Search title, code, artist…" className="input w-60" aria-label="Search the catalog" />
           </form>
         }
@@ -86,6 +90,17 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
             {v.label}
           </Link>
         ))}
+        <span className="ml-auto flex items-center gap-1 pb-1.5">
+          {([[undefined, "All"], ["original", "Zinema Originals"], ["community", "Community"]] as const).map(([o, label]) => (
+            <Link
+              key={label}
+              href={href(view, o)}
+              className={`rounded-full px-2.5 py-1 text-xs ${own === o ? "bg-zinc-900 text-white" : "text-zinc-500 ring-1 ring-zinc-200 hover:bg-zinc-50"}`}
+            >
+              {label}
+            </Link>
+          ))}
+        </span>
       </div>
       {error && <p className="mb-3 text-sm text-red-600">{error.message}</p>}
 
@@ -114,6 +129,7 @@ function SongCard({ song }: { song: Row }) {
       <Link href={`/songs/${song.code}`} className="group block overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md">
         <div className="relative">
           <Cover src={driveThumb(song.cover_url, 500)} code={song.code} title={song.title} prefix={song.page?.code_prefix} />
+          <span className="absolute right-2 top-2"><OwnershipTag ownership={song.ownership} short /></span>
           <span className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${released ? "bg-brand-500 text-black" : "bg-white/90 text-zinc-800"}`}>
             {released ? "Released" : stageLabel(song.current_stage)}
           </span>

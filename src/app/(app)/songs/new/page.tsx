@@ -3,6 +3,7 @@ import { FormSkeleton } from "@/components/skeletons";
 import { createSong } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
 import { PageTitle } from "@/components/ui";
+import { OWNERSHIP } from "@/lib/types";
 import { getSession, pageBySlug } from "@/lib/session";
 
 export default function NewSongPage({ searchParams }: PageProps<"/songs/new">) {
@@ -48,6 +49,20 @@ async function NewSong({ searchParams }: Pick<PageProps<"/songs/new">, "searchPa
             </select>
           </div>
         </div>
+        <fieldset>
+          <legend className="label">Ownership</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {OWNERSHIP.map((o) => (
+              <label key={o.key} className="flex cursor-pointer items-start gap-2 rounded-lg border border-zinc-200 p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 has-[:checked]:ring-2 has-[:checked]:ring-brand-200">
+                <input type="radio" name="ownership" value={o.key} defaultChecked={o.key === "original"} className="mt-0.5 accent-[#fc7c0f]" />
+                <span>
+                  <span className="block text-sm font-medium">{o.label}</span>
+                  <span className="block text-xs text-zinc-500">{o.desc}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div>
           <label className="label" htmlFor="planned_release_date">Planned release date (optional)</label>
           <input id="planned_release_date" name="planned_release_date" type="date" className="input" />

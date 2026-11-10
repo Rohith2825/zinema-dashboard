@@ -121,3 +121,11 @@ export const FORMAT_ICON: Partial<Record<DeliverableKind, string>> = {
   static_image: "▣",
   audio_only: "♪",
 };
+
+/** Who owns the song. Drives how royalty splits are classified. */
+export type Ownership = "original" | "community";
+export const OWNERSHIP: { key: Ownership; label: string; short: string; desc: string }[] = [
+  { key: "original", label: "Zinema Original", short: "Original", desc: "Made and owned by Zinema" },
+  { key: "community", label: "Community", short: "Community", desc: "Released with Zinema, owned by the artist or label" },
+];
+export const ownershipLabel = (k?: string | null) => OWNERSHIP.find((o) => o.key === k)?.label ?? "Zinema Original";

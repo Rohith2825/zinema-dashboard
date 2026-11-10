@@ -3,7 +3,7 @@ import { BoardSkeleton } from "@/components/skeletons";
 import Link from "next/link";
 import { getSession, pageBySlug } from "@/lib/session";
 import { STAGES, type StageKey } from "@/lib/types";
-import { Badge, PageTabs, PageTitle, pageShort } from "@/components/ui";
+import { Badge, OwnershipTag, PageTabs, PageTitle, pageShort } from "@/components/ui";
 
 export default function BoardPage({ searchParams }: PageProps<"/board">) {
   return (
@@ -17,6 +17,7 @@ type SongRow = {
   id: string;
   code: string;
   title: string;
+  ownership: string;
   current_stage: StageKey;
   planned_release_date: string | null;
   metadata: { language?: string | null; imported?: boolean } | null;
@@ -34,7 +35,7 @@ async function Board({ searchParams }: Pick<PageProps<"/board">, "searchParams">
   let q = s.supabase
     .from("songs")
     .select(
-      "id, code, title, current_stage, planned_release_date, metadata, page:pages(name, slug), deliverables(kind, stage, required, assignee_id, deliverable_versions(status)), distribution_records(isrc, distributor, legacy), song_formats(status)",
+      "id, code, title, ownership, current_stage, planned_release_date, metadata, page:pages(name, slug), deliverables(kind, stage, required, assignee_id, deliverable_versions(status)), distribution_records(isrc, distributor, legacy), song_formats(status)",
     )
     .is("archived_at", null)
     .order("code");
@@ -94,6 +95,7 @@ function SongCard({ song, showPage }: { song: SongRow; showPage: boolean }) {
       </div>
       <p className="mt-1 font-medium leading-snug">{song.title}</p>
       <div className="mt-2 flex flex-wrap gap-1">
+        {song.ownership === "community" && <OwnershipTag ownership="community" />}
         {!live && inStage.length > 0 && (
           <Badge tone={approved === inStage.length ? "green" : "zinc"}>
             {approved}/{inStage.length} approved

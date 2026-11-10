@@ -10,10 +10,10 @@ import {
 import { ActionForm, Submit } from "@/components/action-form";
 import { Cover } from "@/components/cover";
 import { driveThumb } from "@/lib/drive";
-import { Badge, Empty, PageDot, VERSION_LABEL, VERSION_TONE, pageShort, type Tone } from "@/components/ui";
+import { Badge, Empty, OwnershipTag, PageDot, VERSION_LABEL, VERSION_TONE, pageShort, type Tone } from "@/components/ui";
 import { getSession, type Session } from "@/lib/session";
 import {
-  FORMAT_PLATFORMS, FORMAT_STATUSES, KIND_LABEL, PLATFORM_LABEL, STAGES, TZ, fmtDate, formatStatusLabel, shortName, stageLabel,
+  FORMAT_PLATFORMS, FORMAT_STATUSES, KIND_LABEL, OWNERSHIP, PLATFORM_LABEL, STAGES, TZ, fmtDate, formatStatusLabel, shortName, stageLabel,
   type DeliverableKind, type FormatStatus, type Platform, type Profile, type StageKey,
 } from "@/lib/types";
 
@@ -55,7 +55,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
 
   const { data: song } = await db
     .from("songs")
-    .select("id, code, title, artists, cover_url, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix)")
+    .select("id, code, title, artists, cover_url, ownership, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix)")
     .eq("code", decodeURIComponent(code).toUpperCase())
     .maybeSingle();
   if (!song) notFound();
@@ -109,6 +109,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
             <h1 className="text-2xl font-semibold tracking-tight">{song.title}</h1>
             <p className={`text-sm ${song.artists ? "text-zinc-600" : "italic text-zinc-400"}`}>{song.artists || "Artists not added yet"}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
+              <OwnershipTag ownership={song.ownership} />
               <Badge><PageDot prefix={page?.code_prefix} className="mr-1" />{pageShort(page?.name)}</Badge>
               {meta.language && <Badge>{meta.language}</Badge>}
               {meta.style && <Badge>{meta.style}</Badge>}
@@ -203,6 +204,12 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
                 <input name="title" defaultValue={song.title} className="input" disabled={!canWork} />
               </div>
               <div>
+                <label className="label">Ownership</label>
+                <select name="ownership" defaultValue={song.ownership ?? "original"} className="input" disabled={!canWork}>
+                  {OWNERSHIP.map((o) => <option key={o.key} value={o.key}>{o.label} — {o.desc}</option>)}
+                </select>
+              </div>
+              <div>
                 <label className="label">Artists</label>
                 <input name="artists" defaultValue={song.artists ?? ""} placeholder="e.g. Sid Sriram, Shreya Ghoshal" className="input" disabled={!canWork} />
               </div>
@@ -295,6 +302,10 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           {s.isOwner && (
             <section className="card border-brand-200 p-4">
               <h2 className="mb-1 font-medium">Royalty splits <Badge tone="violet">owners only</Badge></h2>
+              <p className="mb-2 flex items-center gap-2 text-xs text-zinc-600">
+                <OwnershipTag ownership={song.ownership} />
+                {song.ownership === "community" ? "Artist/label owns the master — record Zinema's share." : "Zinema owns the master."}
+              </p>
               <p className="mb-3 text-xs text-zinc-500">One per line: Party, role, master|publishing, share %. Each type must total 100.</p>
               <ActionForm action={saveRights} className="space-y-2">
                 <input type="hidden" name="song_id" value={song.id} />

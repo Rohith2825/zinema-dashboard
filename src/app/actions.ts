@@ -45,6 +45,7 @@ export async function createSong(_: ActionState, fd: FormData): Promise<ActionSt
       page_id: pageId,
       planned_release_date: str(fd, "planned_release_date"),
       metadata: { language: str(fd, "language") },
+      ownership: str(fd, "ownership") === "community" ? "community" : "original",
       created_by: uid,
       owner_id: uid,
     })
@@ -69,6 +70,7 @@ export async function updateSong(_: ActionState, fd: FormData): Promise<ActionSt
       metadata,
       artists: str(fd, "artists"),
       cover_url: cover,
+      ...(str(fd, "ownership") ? { ownership: str(fd, "ownership") === "community" ? "community" : "original" } : {}),
     })
     .eq("id", id!);
   if (error) return fail(friendly(error));

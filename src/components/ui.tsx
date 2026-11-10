@@ -112,3 +112,18 @@ export function Avatar({ name, email, size = 40 }: { name?: string | null; email
     </span>
   );
 }
+
+/** "Zinema Original" (orange) or "Community" (neutral) tag. */
+export function OwnershipTag({ ownership, short = false }: { ownership?: string | null; short?: boolean }) {
+  const original = ownership !== "community";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${
+        original ? "bg-black text-white" : "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200"
+      }`}
+    >
+      {original && <span aria-hidden="true" className="inline-block h-1.5 w-1.5 bg-brand-500" />}
+      {original ? (short ? "Original" : "Zinema Original") : "Community"}
+    </span>
+  );
+}
