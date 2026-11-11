@@ -17,7 +17,7 @@ export default function NewSongPage({ searchParams }: PageProps<"/songs/new">) {
 async function NewSong({ searchParams }: Pick<PageProps<"/songs/new">, "searchParams">) {
   const sp = await searchParams;
   const s = await getSession();
-  const allowed = s.pages.filter((p) => s.roleOn(p.id, ["page_admin", "approver", "maker"]));
+  const allowed = s.pages.filter((p) => s.canWork(p.id));
   const preset = pageBySlug(allowed, sp.page);
 
   return (

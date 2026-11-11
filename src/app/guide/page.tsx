@@ -61,14 +61,14 @@ export default function Guide() {
               <ol className="space-y-4">
                 <Step n={1}>Go to <Link href="/login" className="font-medium text-brand-700 underline">the sign-in page</Link> and continue with your Google account. There are no passwords.</Step>
                 <Step n={2}>The first time, you&apos;ll see “You&apos;re in — almost”. That&apos;s expected: you exist, but you aren&apos;t on a page yet.</Step>
-                <Step n={3}>Tell your page admin (or write to <Mail />) which Google email you used. They give you a role on Tamil, Hindi, Marathi, Spiritual or Community.</Step>
+                <Step n={3}>Tell your page admin (or write to <Mail />) which Google email you used. They add you as core team or viewer on Tamil, Hindi, Marathi, Spiritual or Community — or on all pages.</Step>
                 <Step n={4}>Refresh. The board, catalog and calendar are now yours.</Step>
               </ol>
               <p className="well p-4 text-sm">Signed in with the wrong Google account? Sign out from the bottom of the side rail and pick the right one.</p>
             </Section>
 
             <Section id="roles" title="Roles">
-              <p>You get a role per page, and you can hold different roles on different pages.</p>
+              <p>Everyone has one access level. Core team and viewers are added to specific pages, or to all of them.</p>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {ROLES.map((r) => (
                   <li key={r.key} className="tile p-4">
@@ -87,9 +87,9 @@ export default function Guide() {
                 ))}
               </div>
               <ol className="space-y-4">
-                <Step n={1}><b>A maker submits</b> a file for an item — upload it, or paste a Google Drive link.</Step>
-                <Step n={2}><b>A checker reviews</b> it: approve, or request changes with a note. You can never review your own submission.</Step>
-                <Step n={3}><b>An approver moves the song on</b> once everything the stage requires is approved. The button simply won&apos;t work before that.</Step>
+                <Step n={1}><b>Someone on the core team submits</b> a file for an item — upload it, or paste a Google Drive link.</Step>
+                <Step n={2}><b>A different core team member checks</b> it: approve, or request changes with a note. You can never check your own submission.</Step>
+                <Step n={3}><b>An admin or owner moves the song on</b> once everything the stage requires is approved. The button simply won&apos;t work before that.</Step>
               </ol>
               <p>Every song needs <b>3 carousels and 3 verticals</b> before promo is done. Songs are labelled <b>Zinema Original</b> (made and owned by Zinema) or <b>Community</b> (released with Zinema, owned by the artist).</p>
             </Section>

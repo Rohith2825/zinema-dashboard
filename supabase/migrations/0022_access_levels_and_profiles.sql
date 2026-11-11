@@ -1,4 +1,4 @@
--- New access model + personal profiles. NOT APPLIED YET: waiting for approval of the Supabase prompt (written 2026-11-12).
+-- New access model + personal profiles (applied 2026-11-12).
 --
 --   Owner      rights_owners            sees and does everything, incl. royalty splits and attendance; approves
 --   Admin      profiles.is_org_admin    every page; manages people; approves; no owner-only data

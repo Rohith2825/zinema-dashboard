@@ -1,12 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { removeMember } from "@/app/actions";
-import { ActionForm } from "@/components/action-form";
 import { RolePicker, type PickerPage, type PickerPerson } from "@/components/role-picker";
 import { TeamSkeleton } from "@/components/skeletons";
 import { Avatar, Badge, PageDot, PageTitle, pageShort } from "@/components/ui";
 import { getSession } from "@/lib/session";
-import { ROLES, shortName, type PageRole, type Profile } from "@/lib/types";
+import { ROLES, shortName, type Profile } from "@/lib/types";
 
 export default function TeamPage({ searchParams }: PageProps<"/team">) {
   return (
@@ -19,32 +17,35 @@ export default function TeamPage({ searchParams }: PageProps<"/team">) {
 async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) {
   const sp = await searchParams;
   const s = await getSession();
-  const [{ data: peopleData }, { data: memberData }, { data: ownersData }] = await Promise.all([
-    s.supabase.from("profiles").select("id, full_name, email, is_org_admin").order("full_name"),
+  const [{ data: peopleData }, { data: memberData }, { data: allData }, { data: ownersData }] = await Promise.all([
+    s.supabase.from("profiles").select("id, full_name, nickname, handle, bio, email, is_org_admin").order("full_name"),
     s.supabase.from("page_members").select("user_id, page_id, role"),
+    s.supabase.from("all_page_roles").select("user_id, role"),
     s.isOwner ? s.supabase.from("rights_owners").select("user_id") : Promise.resolve({ data: [] as { user_id: string }[] }),
   ]);
   const people = (peopleData ?? []) as Profile[];
-  const members = (memberData ?? []) as { user_id: string; page_id: string; role: PageRole }[];
+  const members = (memberData ?? []) as { user_id: string; page_id: string; role: "core" | "viewer" }[];
+  const allRoles = new Map((allData ?? []).map((r) => [r.user_id as string, r.role as "core" | "viewer"]));
   const owners = new Set((ownersData ?? []).map((o) => o.user_id));
-  const adminPages = s.pages.filter((p) => s.roleOn(p.id, ["page_admin"]));
-  const roleLabel = (r: string) => ROLES.find((x) => x.key === r)?.label ?? r;
   const pageOf = (id: string) => s.pages.find((p) => p.id === id);
-  const needRole = people.filter((p) => !p.is_org_admin && !members.some((m) => m.user_id === p.id));
 
-  const pickerPeople: PickerPerson[] = people.map((p) => ({
-    id: p.id,
-    name: shortName(p),
-    email: p.email,
-    isAdmin: p.is_org_admin,
-    roles: members.filter((m) => m.user_id === p.id).map((m) => ({ pageId: m.page_id, role: m.role })),
-  }));
-  const pickerPages: PickerPage[] = adminPages.map((p) => ({
+  const roster: PickerPerson[] = people.map((p) => {
+    const mine = members.filter((m) => m.user_id === p.id);
+    const all = allRoles.get(p.id);
+    // Non-owners can't tell owners from admins (that list is private), so both show as Admin to them.
+    const level = owners.has(p.id) ? "owner" : p.is_org_admin ? "admin" : (all ?? (mine.some((m) => m.role === "core") ? "core" : mine.length ? "viewer" : null));
+    return { id: p.id, name: shortName(p), handle: p.handle ?? null, email: p.email, level, allPages: Boolean(all), pageIds: mine.map((m) => m.page_id) };
+  });
+  const pickerPages: PickerPage[] = s.pages.map((p) => ({
     id: p.id,
     name: pageShort(p.name),
     prefix: p.code_prefix,
     members: new Set(members.filter((m) => m.page_id === p.id).map((m) => m.user_id)).size,
   }));
+  const waiting = roster.filter((r) => r.level === null).length;
+  const selected = typeof sp.person === "string" ? sp.person : undefined;
+  const order = { owner: 0, admin: 1, core: 2, viewer: 3 } as const;
+  const sorted = [...roster].sort((a, b) => (a.level ? order[a.level] : -1) - (b.level ? order[b.level] : -1) || a.name.localeCompare(b.name));
 
   return (
     <>
@@ -53,74 +54,62 @@ async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) 
         sub={
           <>
             {people.length} {people.length === 1 ? "person" : "people"}
-            {needRole.length > 0 && <> · <span className="font-medium text-amber-700">{needRole.length} waiting for a role</span></>}
+            {waiting > 0 && <> · <span className="font-medium text-amber-700">{waiting} waiting for access</span></>}
             {" · "}people appear here after signing in with Google once.
           </>
         }
+        actions={<Link href="/profile" className="btn-ghost">Edit my profile</Link>}
       />
 
+      {/* What each level means */}
+      <ul className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {ROLES.map((r) => (
+          <li key={r.key} className="tile p-4">
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${r.key === "owner" ? "bg-brand-500 text-black" : "bg-[#0d0d10] text-white"}`}>{r.icon}</span>
+              {r.label}
+              <span className="ml-auto text-xs font-normal text-muted">{roster.filter((x) => x.level === r.key).length}</span>
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-muted">{r.desc}</p>
+          </li>
+        ))}
+      </ul>
+
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
-        {/* Roster */}
         <ul className="grid gap-6 sm:grid-cols-2">
-          {people.map((p) => {
-            const mine = members.filter((m) => m.user_id === p.id);
-            const byPage = [...new Set(mine.map((m) => m.page_id))];
-            const fresh = mine.length === 0 && !p.is_org_admin;
+          {sorted.map((r) => {
+            const p = people.find((x) => x.id === r.id)!;
             return (
-              <li key={p.id} className={`card p-5 ${fresh ? "ring-2 ring-amber-400/50" : ""}`}>
+              <li key={r.id} className={`card p-5 ${r.level === null ? "ring-2 ring-amber-400/50" : ""}`}>
                 <div className="flex items-center gap-3">
-                  <Avatar name={p.full_name} email={p.email} size={44} />
+                  <Avatar name={r.name} email={r.email} size={44} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">
-                      {shortName(p)}
-                      {p.id === s.user.id && <span className="ml-1.5 text-xs font-normal text-zinc-400">(you)</span>}
+                      {r.name}
+                      {r.id === s.user.id && <span className="ml-1.5 text-xs font-normal text-zinc-400">(you)</span>}
                     </p>
-                    <p className="truncate text-xs text-muted">{p.email}</p>
+                    <p className="truncate text-xs text-muted">{r.handle ? `@${r.handle}` : r.email}</p>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    {p.is_org_admin && <Badge tone="violet">Admin</Badge>}
-                    {owners.has(p.id) && <Badge tone="green">Owner</Badge>}
-                  </div>
+                  {r.level && <Badge tone={r.level === "owner" ? "violet" : r.level === "admin" ? "blue" : r.level === "core" ? "green" : "zinc"}>{ROLES.find((x) => x.key === r.level)?.label}</Badge>}
                 </div>
+                {p.bio && <p className="mt-3 text-sm text-zinc-700">{p.bio}</p>}
 
-                <div className="mt-3 space-y-1.5">
-                  {p.is_org_admin && <p className="text-xs text-muted">Full access to every page.</p>}
-                  {byPage.map((pid) => {
-                    const pg = pageOf(pid);
-                    const canEdit = s.roleOn(pid, ["page_admin"]);
-                    return (
-                      <div key={pid} className="flex flex-wrap items-center gap-1.5">
-                        <span className="flex w-24 items-center gap-1.5 text-xs font-medium text-zinc-700">
-                          <PageDot prefix={pg?.code_prefix} />
-                          {pageShort(pg?.name)}
-                        </span>
-                        {mine.filter((m) => m.page_id === pid).map((m) => (
-                          <span key={m.role} className="inline-flex items-center gap-1 rounded-full bg-black/[0.05] py-0.5 pl-2.5 pr-1.5 text-xs">
-                            {roleLabel(m.role)}
-                            {canEdit && (
-                              <ActionForm action={removeMember} confirm={`Remove ${shortName(p)} as ${roleLabel(m.role)} on ${pageShort(pg?.name)}?`}>
-                                <input type="hidden" name="user_id" value={m.user_id} />
-                                <input type="hidden" name="page_id" value={m.page_id} />
-                                <input type="hidden" name="role" value={m.role} />
-                                <button className="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-red-100 hover:text-red-600" aria-label={`Remove ${roleLabel(m.role)} role`}>
-                                  ✕
-                                </button>
-                              </ActionForm>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    );
-                  })}
-                  {fresh && (
-                    <div className="flex items-center justify-between gap-2 rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-900">
-                      <span>Signed in, but has no role yet.</span>
-                      {adminPages.length > 0 && (
-                        <Link href={`/team?person=${p.id}#give-role`} scroll={false} className="font-medium text-brand-700 hover:underline">
-                          Give a role →
-                        </Link>
-                      )}
-                    </div>
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+                  {r.level === "owner" || r.level === "admin" || r.allPages ? (
+                    <span className="rounded-full bg-[#0d0d10] px-2.5 py-1 font-medium text-white">All pages</span>
+                  ) : (
+                    r.pageIds.map((id) => (
+                      <span key={id} className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.05] px-2.5 py-1">
+                        <PageDot prefix={pageOf(id)?.code_prefix} />
+                        {pageShort(pageOf(id)?.name)}
+                      </span>
+                    ))
+                  )}
+                  {r.level === null && <span className="rounded-xl bg-amber-500/10 px-3 py-1.5 text-amber-900">Signed in, no access yet</span>}
+                  {s.isAdmin && r.level !== "owner" && (
+                    <Link href={`/team?person=${r.id}#access`} scroll={false} className="ml-auto font-medium text-brand-700 hover:underline">
+                      {r.level === null ? "Give access →" : "Change"}
+                    </Link>
                   )}
                 </div>
               </li>
@@ -128,17 +117,11 @@ async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) 
           })}
         </ul>
 
-        {/* Give a role */}
-        {adminPages.length > 0 && (
-          <section id="give-role" className="card p-6 xl:sticky xl:top-8">
-            <h2 className="font-medium">Give someone a role</h2>
-            <p className="mb-4 mt-0.5 text-xs text-muted">One person can hold different roles on different pages.</p>
-            <RolePicker
-              key={typeof sp.person === "string" ? sp.person : "none"}
-              people={pickerPeople}
-              pages={pickerPages}
-              defaultPerson={typeof sp.person === "string" ? sp.person : undefined}
-            />
+        {s.isAdmin && (
+          <section id="access" className="card p-5 md:p-6 xl:sticky xl:top-8">
+            <h2 className="font-medium">Set someone&apos;s access</h2>
+            <p className="mb-4 mt-0.5 text-xs text-muted">One level per person, on the pages you choose or on all of them.</p>
+            <RolePicker key={selected ?? "none"} people={roster} pages={pickerPages} defaultPerson={selected} canMakeAdmins={s.isOwner} />
           </section>
         )}
       </div>

@@ -432,10 +432,10 @@ export async function addComment(_: ActionState, fd: FormData): Promise<ActionSt
   // @mentions: match @handle against email name or first name.
   const handles = [...body.matchAll(/@([\w.-]+)/g)].map((m) => m[1].toLowerCase());
   if (handles.length) {
-    const { data: people } = await supabase.from("profiles").select("id, full_name, email");
+    const { data: people } = await supabase.from("profiles").select("id, full_name, nickname, handle, email");
     const ids = new Set<string>();
     for (const p of people ?? []) {
-      const keys = [p.email.split("@")[0].toLowerCase(), (p.full_name ?? "").split(" ")[0].toLowerCase()];
+      const keys = [p.handle, p.email.split("@")[0], (p.nickname ?? "").split(" ")[0], (p.full_name ?? "").split(" ")[0]].filter(Boolean).map((k) => k!.toLowerCase());
       if (handles.some((h) => keys.includes(h)) && p.id !== uid) ids.add(p.id);
     }
     if (ids.size) await supabase.from("mentions").insert([...ids].map((user_id) => ({ comment_id: data.id, user_id })));
@@ -445,25 +445,60 @@ export async function addComment(_: ActionState, fd: FormData): Promise<ActionSt
 }
 
 // ─────────── Team & inbox ───────────
-export async function addMember(_: ActionState, fd: FormData): Promise<ActionState> {
+/**
+ * Sets one person's access in one go: admin, or core team / viewer on chosen pages or on all pages, or none.
+ * Row-level security decides whether the caller may do this (admins manage access; only owners make admins).
+ */
+export async function setAccess(_: ActionState, fd: FormData): Promise<ActionState> {
   const { supabase } = await ctx();
-  const { error } = await supabase
-    .from("page_members")
-    .insert({ user_id: str(fd, "user_id")!, page_id: str(fd, "page_id")!, role: str(fd, "role")! });
-  if (error) return fail(friendly(error));
+  const userId = str(fd, "user_id");
+  const level = str(fd, "level"); // admin | core | viewer | none
+  const scope = str(fd, "scope"); // all | pages
+  const pageIds = fd.getAll("page_ids").filter((v): v is string => typeof v === "string" && v !== "");
+  if (!userId || !level) return fail("Pick a person and an access level.");
+
+  const { data: target } = await supabase.from("profiles").select("is_org_admin").eq("id", userId).maybeSingle();
+  if (!target) return fail("That person hasn't signed in yet.");
+
+  if (level === "admin" || target.is_org_admin) {
+    const { error } = await supabase.rpc("set_admin", { p_user: userId, p_admin: level === "admin" });
+    if (error) return fail(friendly(error));
+  }
+  // Start clean, then write the new scope.
+  const wipe = await Promise.all([
+    supabase.from("page_members").delete().eq("user_id", userId),
+    supabase.from("all_page_roles").delete().eq("user_id", userId),
+  ]);
+  const wipeError = wipe.find((r) => r.error)?.error;
+  if (wipeError) return fail(friendly(wipeError));
+
+  if (level === "core" || level === "viewer") {
+    if (scope === "all") {
+      const { error } = await supabase.from("all_page_roles").insert({ user_id: userId, role: level });
+      if (error) return fail(friendly(error));
+    } else {
+      if (pageIds.length === 0) return fail("Pick at least one page, or choose “All pages”.");
+      const { error } = await supabase.from("page_members").insert(pageIds.map((page_id) => ({ user_id: userId, page_id, role: level })));
+      if (error) return fail(friendly(error));
+    }
+  }
   refresh();
-  return { ok: "Role added." };
+  return { ok: level === "none" ? "Access removed." : "Access updated." };
 }
 
-export async function removeMember(_: ActionState, fd: FormData): Promise<ActionState> {
-  const { supabase } = await ctx();
-  const { error } = await supabase
-    .from("page_members")
-    .delete()
-    .match({ user_id: str(fd, "user_id")!, page_id: str(fd, "page_id")!, role: str(fd, "role")! });
-  if (error) return fail(friendly(error));
+// ─────────── Profile ───────────
+export async function updateProfile(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase, uid } = await ctx();
+  const handle = (str(fd, "handle") ?? "").replace(/^@/, "").toLowerCase();
+  if (!/^[a-z0-9._]{3,30}$/.test(handle)) return fail("Your ID needs 3–30 characters: letters, numbers, dots or underscores.");
+  const nickname = str(fd, "nickname");
+  const bio = str(fd, "bio");
+  if ((nickname?.length ?? 0) > 40) return fail("Nickname can be up to 40 characters.");
+  if ((bio?.length ?? 0) > 300) return fail("Description can be up to 300 characters.");
+  const { error } = await supabase.from("profiles").update({ handle, nickname, bio }).eq("id", uid);
+  if (error) return fail(error.message.includes("profiles_handle_key") ? `@${handle} is taken. Try another.` : friendly(error));
   refresh();
-  return undefined;
+  return { ok: "Profile saved." };
 }
 
 export async function markAllRead(): Promise<ActionState> {

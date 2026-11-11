@@ -84,15 +84,18 @@ export const TOOLS: Tool[] = [
     inputSchema: { type: "object", properties: {} },
     readOnly: true,
     async run(ctx) {
-      const [profile, roles, owner] = await Promise.all([
-        ctx.supabase.from("profiles").select("full_name, email, is_org_admin").eq("id", ctx.userId).maybeSingle(),
+      const [profile, roles, all, owner] = await Promise.all([
+        ctx.supabase.from("profiles").select("full_name, nickname, handle, email, is_org_admin").eq("id", ctx.userId).maybeSingle(),
         ctx.supabase.from("page_members").select("role, page:pages(slug, name)").eq("user_id", ctx.userId),
+        ctx.supabase.from("all_page_roles").select("role").eq("user_id", ctx.userId).maybeSingle(),
         ctx.supabase.rpc("is_rights_owner"),
       ]);
       return {
         ...check(profile),
         rights_owner: owner.data === true,
         roles: check(roles),
+        all_pages_role: all.data?.role ?? null,
+        access_note: "owner/admin: everything incl. approving stages; core: make and check, cannot approve; viewer: read-only",
         drive_connected: driveConfigured(),
         dashboard: SITE_URL,
         stages: STAGES.map((x) => x.key),
@@ -243,7 +246,7 @@ export const TOOLS: Tool[] = [
     inputSchema: { type: "object", properties: {} },
     readOnly: true,
     async run(ctx) {
-      return check(await ctx.supabase.from("profiles").select("full_name, email, is_org_admin, page_members(role, page:pages(slug))").order("full_name"));
+      return check(await ctx.supabase.from("profiles").select("full_name, nickname, handle, bio, email, is_org_admin, page_members(role, page:pages(slug)), all_page_roles!all_page_roles_user_id_fkey(role)").order("full_name"));
     },
   },
   {
@@ -337,7 +340,7 @@ export const TOOLS: Tool[] = [
   {
     name: "advance_song",
     title: "Move a song to the next stage",
-    description: "Approver only. Moves the song forward if every required item of its current stage is approved (the stage gate).",
+    description: "Admins and owners only. Moves the song forward if every required item of its current stage is approved (the stage gate).",
     inputSchema: { type: "object", properties: { code: CODE }, required: ["code"] },
     async run(ctx, a) {
       const song = await songByCode(ctx, need(a, "code"));
@@ -438,7 +441,7 @@ export const TOOLS: Tool[] = [
   {
     name: "review_file",
     title: "Review a submitted file",
-    description: "Checker/approver only: approve a submitted version or request changes (comments required). You can't review your own submission.",
+    description: "Core team or admin: approve a submitted version or request changes (comments required). You can't review your own submission.",
     inputSchema: {
       type: "object",
       properties: { version_id: s("Version id from get_song or my_queue"), decision: s("approve or request_changes", { enum: ["approve", "request_changes"] }), comments: s("Feedback") },
@@ -615,7 +618,7 @@ export const TOOLS: Tool[] = [
   {
     name: "add_comment",
     title: "Comment on a song",
-    description: "Post a comment in a song's discussion. Shown as 'via Claude'. @mention teammates by the first part of their email.",
+    description: "Post a comment in a song's discussion. Shown as 'via AI'. @mention teammates by their Zinema ID (see list_team).",
     inputSchema: { type: "object", properties: { code: CODE, body: s("Comment text") }, required: ["code", "body"] },
     async run(ctx, a) {
       const song = await songByCode(ctx, need(a, "code"));
@@ -623,8 +626,8 @@ export const TOOLS: Tool[] = [
       const c = check(await ctx.supabase.from("comments").insert({ song_id: song.id, body, author_id: ctx.userId, via: "agent" }).select("id").single());
       const handles = [...body.matchAll(/@([\w.-]+)/g)].map((m) => m[1].toLowerCase());
       if (handles.length) {
-        const { data: people } = await ctx.supabase.from("profiles").select("id, email");
-        const ids = (people ?? []).filter((p) => handles.includes(p.email.split("@")[0].toLowerCase()) && p.id !== ctx.userId).map((p) => p.id);
+        const { data: people } = await ctx.supabase.from("profiles").select("id, email, handle");
+        const ids = (people ?? []).filter((p) => (handles.includes(p.email.split("@")[0].toLowerCase()) || (p.handle && handles.includes(p.handle))) && p.id !== ctx.userId).map((p) => p.id);
         if (ids.length && c) await ctx.supabase.from("mentions").insert(ids.map((user_id) => ({ comment_id: c.id, user_id })));
       }
       return { ok: true };

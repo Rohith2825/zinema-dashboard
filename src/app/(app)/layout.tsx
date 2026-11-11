@@ -5,7 +5,7 @@ import { NavProgress } from "@/components/nav-progress";
 import { UserMenu } from "@/components/user-menu";
 import { pageShort } from "@/components/ui";
 import { getSession } from "@/lib/session";
-import { ROLES, TZ, shortName } from "@/lib/types";
+import { TZ, roleLabel, shortName } from "@/lib/types";
 
 function Logo({ width = 116 }: { width?: number }) {
   return (
@@ -91,7 +91,6 @@ async function Today() {
 
 async function Account() {
   const s = await getSession();
-  const roleLabel = (r: string) => ROLES.find((x) => x.key === r)?.label ?? r;
   return (
     <div className="flex items-center gap-2.5">
       <Link href="/inbox" className="tile relative flex h-11 w-11 items-center justify-center !rounded-full text-zinc-700" aria-label={`Inbox${s.unread ? `, ${s.unread} unread` : ""}`}>
@@ -105,9 +104,10 @@ async function Account() {
           name: shortName(s.profile) === "—" ? (s.user.email ?? "You") : shortName(s.profile),
           email: s.profile?.email ?? s.user.email ?? "",
           photo: s.photo,
-          role: s.isOwner ? "Owner" : s.isAdmin ? "Admin" : s.memberships.length ? "Member" : "No access yet",
-          pages: s.isAdmin
-            ? [{ name: "All pages", role: "Admin" }]
+          role: s.level ? roleLabel(s.level) : "No access yet",
+          handle: s.profile?.handle ?? null,
+          pages: s.isAdmin || s.allRole
+            ? [{ name: "All pages", role: roleLabel(s.level) }]
             : s.memberships.map((m) => ({ name: pageShort(s.pages.find((p) => p.id === m.page_id)?.name), role: roleLabel(m.role) })),
         }}
       />

@@ -41,7 +41,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
     s.isOwner
       ? s.supabase.from("attendance").select("id, user_id, kind, day, at, lat, lng, distance_m, accuracy_m, office:office_locations(name)").eq("day", day).order("at")
       : Promise.resolve({ data: [] }),
-    s.isOwner ? s.supabase.from("profiles").select("id, full_name, email, is_org_admin").order("full_name") : Promise.resolve({ data: [] }),
+    s.isOwner ? s.supabase.from("profiles").select("id, full_name, nickname, handle, bio, email, is_org_admin").order("full_name") : Promise.resolve({ data: [] }),
   ]);
   const offices = (officesR.data ?? []) as OfficeRow[];
   const required = new Set((membersR.data ?? []).map((m) => m.user_id));

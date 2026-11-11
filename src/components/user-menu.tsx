@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui";
 
-export type Me = { name: string; email: string; photo: string | null; role: string; pages: { name: string; role: string }[] };
+export type Me = { name: string; email: string; handle: string | null; photo: string | null; role: string; pages: { name: string; role: string }[] };
 
 /** Account chip in the top bar: who's signed in, with what access, and the way out. */
 export function UserMenu({ me }: { me: Me }) {
@@ -49,7 +49,7 @@ export function UserMenu({ me }: { me: Me }) {
             <Avatar name={me.name} email={me.email} src={me.photo} size={44} />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{me.name}</p>
-              <p className="truncate text-xs text-muted">{me.email}</p>
+              <p className="truncate text-xs text-muted">{me.handle ? `@${me.handle} · ` : ""}{me.email}</p>
             </div>
           </div>
           <div className="well mx-1 mb-2 !rounded-2xl p-3 text-xs">
@@ -60,7 +60,7 @@ export function UserMenu({ me }: { me: Me }) {
               </ul>
             )}
           </div>
-          {[["/team", "Team & roles"], ["/connect", "Connect AI"], ["/guide", "Guide"]].map(([href, label]) => (
+          {[["/profile", "Your profile"], ["/team", "Team & access"], ["/connect", "Connect AI"], ["/guide", "Guide"]].map(([href, label]) => (
             <Link key={href} href={href} role="menuitem" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-sm hover:bg-black/[0.05]">{label}</Link>
           ))}
           <form action="/auth/signout" method="post" className="mt-1 border-t border-black/[0.06] pt-1">

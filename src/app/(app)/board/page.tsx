@@ -44,7 +44,7 @@ async function Board({ searchParams }: Pick<PageProps<"/board">, "searchParams">
   const { data, error } = await q;
   const songs = (data ?? []) as unknown as SongRow[];
 
-  const canCreate = s.isAdmin || s.memberships.some((m) => ["page_admin", "approver", "maker"].includes(m.role));
+  const canCreate = s.level !== null && s.level !== "viewer";
   const columns = STAGES.map((st) => ({ ...st, songs: songs.filter((x) => x.current_stage === st.key) }));
 
   return (

@@ -1,5 +1,7 @@
 export type StageKey = "lyrics" | "music" | "master_qc" | "distribution" | "video" | "promo" | "posting" | "live";
-export type PageRole = "page_admin" | "approver" | "checker" | "maker" | "viewer";
+/** Stored per page (or for all pages). The old maker/checker/approver names only survive as permission checks. */
+export type PageRole = "core" | "viewer" | "page_admin" | "approver" | "checker" | "maker";
+export type AccessLevel = "owner" | "admin" | "core" | "viewer";
 export type TaskStatus = "todo" | "doing" | "blocked" | "done";
 export type VersionStatus = "submitted" | "in_review" | "changes_requested" | "approved" | "superseded";
 export type DeliverableKind =
@@ -48,13 +50,13 @@ export const FORMAT_STATUSES: { key: FormatStatus; label: string }[] = [
 ];
 export const formatStatusLabel = (k: string) => FORMAT_STATUSES.find((s) => s.key === k)?.label ?? k;
 
-export const ROLES: { key: PageRole; label: string; desc: string; icon: string }[] = [
-  { key: "maker", label: "Maker", desc: "Submits files and works through format checklists", icon: "♪" },
-  { key: "checker", label: "Checker", desc: "Approves files or asks for changes — never their own", icon: "✓" },
-  { key: "approver", label: "Approver", desc: "Moves songs to the next stage once the gate is met", icon: "→" },
-  { key: "page_admin", label: "Page admin", desc: "Everything above, plus managing the page's team", icon: "★" },
-  { key: "viewer", label: "Viewer", desc: "Sees songs, calendars and files; can't change anything", icon: "◉" },
+export const ROLES: { key: AccessLevel; label: string; desc: string; icon: string }[] = [
+  { key: "owner", label: "Owner", desc: "Sees and does everything, including royalty splits and attendance. Approves stages.", icon: "★" },
+  { key: "admin", label: "Admin", desc: "Every page. Adds people, sets access and approves stages. No owner-only data.", icon: "◆" },
+  { key: "core", label: "Core team", desc: "Makes and checks everything on their pages — never their own file. Can't approve a stage.", icon: "♪" },
+  { key: "viewer", label: "Viewer", desc: "Read-only: sees songs, files and calendars on their pages.", icon: "◉" },
 ];
+export const roleLabel = (k?: string | null) => ROLES.find((r) => r.key === k)?.label ?? (k === "viewer" ? "Viewer" : "Core team");
 
 export const TASK_COLUMNS: { key: TaskStatus; label: string }[] = [
   { key: "todo", label: "To do" },
@@ -64,7 +66,7 @@ export const TASK_COLUMNS: { key: TaskStatus; label: string }[] = [
 ];
 
 export type Page = { id: string; slug: string; name: string; code_prefix: string; is_main: boolean };
-export type Profile = { id: string; full_name: string; email: string; is_org_admin: boolean };
+export type Profile = { id: string; full_name: string; email: string; is_org_admin: boolean; nickname?: string | null; handle?: string | null; bio?: string | null };
 
 export type ActionState = { error?: string; ok?: string } | undefined;
 
@@ -73,9 +75,9 @@ export function fmtDate(d: string | null | undefined, opts: Intl.DateTimeFormatO
   if (!d) return "—";
   return new Intl.DateTimeFormat("en-IN", { timeZone: TZ, ...opts }).format(new Date(d));
 }
-export function shortName(p?: { full_name?: string | null; email?: string | null } | null) {
+export function shortName(p?: { full_name?: string | null; email?: string | null; nickname?: string | null } | null) {
   if (!p) return "—";
-  return p.full_name || p.email?.split("@")[0] || "—";
+  return p.nickname || p.full_name || p.email?.split("@")[0] || "—";
 }
 
 export type Platform =

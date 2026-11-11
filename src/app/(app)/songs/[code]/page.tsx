@@ -72,7 +72,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
     db.from("tasks").select("id, title, status, assignee_id, due_at").eq("song_id", song.id).order("created_at"),
     db.from("comments").select("id, body, author_id, created_at, via").eq("song_id", song.id).order("created_at"),
     db.from("activity_log").select("id, at, actor_id, entity, action, diff").eq("song_id", song.id).order("at", { ascending: false }).limit(15),
-    db.from("profiles").select("id, full_name, email, is_org_admin").order("full_name"),
+    db.from("profiles").select("id, full_name, nickname, handle, bio, email, is_org_admin").order("full_name"),
     s.isOwner ? db.from("song_rights").select("splits, notes, contract_drive_url, updated_at").eq("song_id", song.id).maybeSingle() : Promise.resolve({ data: null }),
     db.from("song_formats")
       .select("id, deliverable_id, kind, label, status, mandatory, owner_id, planned_at, went_live_at, live_url, drive_folder_url, notes, format_checklist(id, label, position, done_at, done_by), format_publications(id, platform, url, published_at, published_by)")

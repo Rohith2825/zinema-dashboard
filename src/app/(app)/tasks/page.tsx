@@ -31,7 +31,7 @@ async function Tasks({ searchParams }: Pick<PageProps<"/tasks">, "searchParams">
   if (mine) q = q.eq("assignee_id", s.user.id);
   const [{ data }, { data: peopleData }, { data: songsData }] = await Promise.all([
     q,
-    s.supabase.from("profiles").select("id, full_name, email, is_org_admin").order("full_name"),
+    s.supabase.from("profiles").select("id, full_name, nickname, handle, bio, email, is_org_admin").order("full_name"),
     s.supabase.from("songs").select("id, code, title, page_id").neq("current_stage", "live").order("code"),
   ]);
   const people = (peopleData ?? []) as Profile[];
