@@ -17,6 +17,14 @@ export function NavProgress() {
   const pending = leaving !== null && leaving === current;
   const clicked = useRef<HTMLElement | null>(null);
 
+  // Opening a different page from a link or tab always starts at the very top, even on phones where the
+  // sticky header and a half-finished smooth scroll could leave the title tucked underneath it.
+  const cameFrom = useRef<string | null>(null);
+  useEffect(() => {
+    if (cameFrom.current !== null && cameFrom.current !== pathname) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    cameFrom.current = null;
+  }, [pathname]);
+
   useEffect(() => {
     // Same shape as `current` (pathname + normalised query) so the two compare reliably.
     const key = (u: { pathname: string; search: string }) => {
@@ -28,6 +36,7 @@ export function NavProgress() {
       if (url.origin !== location.origin) return;
       if (key(url) === here()) return; // same screen (or hash-only)
       setLeaving(here());
+      cameFrom.current = location.pathname;
     };
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
