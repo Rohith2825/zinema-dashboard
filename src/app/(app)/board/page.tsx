@@ -60,7 +60,7 @@ async function Board({ searchParams }: Pick<PageProps<"/board">, "searchParams">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 2xl:grid-cols-8">
         {columns.map((col) => (
           <section key={col.key} className="well flex max-h-72 min-h-24 flex-col p-2.5 md:h-[calc((100vh-21rem)/2)] md:max-h-none md:min-h-56 2xl:h-[calc(100vh-19rem)]">
-            <header className="flex items-center justify-between px-1.5 pb-2 pt-1">
+            <header className="flex items-center justify-between px-1.5 pb-0 pt-1">
               <h2 className="eyebrow truncate !text-zinc-700">{col.label}</h2>
               <span className="flex items-center gap-1">
                 <span className="rounded-full bg-black/[0.06] px-1.5 text-[11px] font-medium text-zinc-600">{col.songs.length}</span>
@@ -75,7 +75,8 @@ async function Board({ searchParams }: Pick<PageProps<"/board">, "searchParams">
                 </StageModal>
               </span>
             </header>
-            <div className="-mx-1 flex-1 space-y-2 overflow-y-auto px-1 pb-1">
+            {/* Padding leaves room for the cards' soft shadows, so the scroll area never cuts them into a hard edge. */}
+            <div className="-mx-2.5 -mb-2.5 flex-1 space-y-2.5 overflow-y-auto rounded-b-[20px] px-3.5 pb-4 pt-2.5 [scrollbar-width:thin]">
               {col.songs.map((song) => <CompactCard key={song.id} song={song} />)}
               {col.songs.length === 0 && <p className="px-1 pt-6 text-center text-[11px] text-zinc-400">Empty</p>}
             </div>

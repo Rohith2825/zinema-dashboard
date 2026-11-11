@@ -31,7 +31,7 @@ export function StageModal({ title, count, children }: { title: string; count: n
             </div>
             <button type="button" onClick={() => ref.current?.close()} className="btn-ghost !px-3" aria-label="Close">✕</button>
           </header>
-          <div className="overflow-y-auto px-8 pb-8 pt-2">{children}</div>
+          <div className="overflow-y-auto px-8 pb-10 pt-4">{children}</div>
         </div>
       </dialog>
     </>
