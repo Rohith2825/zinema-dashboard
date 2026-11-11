@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 // Open without sign-in. The MCP endpoint does its own bearer-token check.
-const PUBLIC_PATHS = ["/login", "/auth", "/guide", "/api/mcp", "/.well-known", "/brand/", "/robots.txt", "/sitemap.xml", "/icon", "/apple-icon", "/opengraph-image", "/twitter-image"];
+const PUBLIC_PATHS = ["/login", "/auth", "/guide", "/api/mcp", "/api/cron", "/.well-known", "/brand/", "/robots.txt", "/sitemap.xml", "/icon", "/apple-icon", "/opengraph-image", "/twitter-image"];
 
 // Refreshes the Supabase session cookie on every request and sends signed-out users to /login.
 export async function updateSession(request: NextRequest) {

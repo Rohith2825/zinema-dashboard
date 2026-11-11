@@ -1,7 +1,7 @@
 import "server-only";
 import { createSign } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { stageLabel } from "./types";
+import { selfiesPurged, stageLabel } from "./types";
 
 /**
  * Google Drive as the single file store for Zinema OS.
@@ -222,4 +222,28 @@ export async function downloadFile(id: string): Promise<Response> {
   const res = await fetch(`${API}/files/${id}?alt=media&${ALL}`, { headers: { Authorization: `Bearer ${await accessToken()}` }, cache: "no-store" });
   if (!res.ok) throw new DriveError("Couldn't load the file from Drive.");
   return res;
+}
+
+/** Moves a file or folder to the Drive trash (Google empties it for good after 30 days). */
+export async function trashFile(id: string): Promise<void> {
+  await call(`${API}/files/${id}?${ALL}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trashed: true }) });
+}
+
+/**
+ * Removes attendance selfies once their month is over and the 5-day grace period has passed:
+ * from the 5th of a month, everything from earlier months goes. Attendance records themselves stay.
+ */
+export async function purgeAttendanceSelfies(today: string): Promise<{ removed: string[] }> {
+  const top = process.env.GOOGLE_DRIVE_ATTENDANCE_ID ?? (await ensureFolder("Zinema OS Attendance (private)", "root"));
+  const removed: string[] = [];
+  for (const person of await listFolder(top)) {
+    if (person.mimeType !== FOLDER) continue;
+    for (const month of await listFolder(person.id)) {
+      if (month.mimeType === FOLDER && /^\d{4}-\d{2}$/.test(month.name) && selfiesPurged(`${month.name}-01`, today)) {
+        await trashFile(month.id);
+        removed.push(`${person.name} / ${month.name}`);
+      }
+    }
+  }
+  return { removed };
 }

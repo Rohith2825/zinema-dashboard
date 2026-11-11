@@ -129,3 +129,13 @@ export const OWNERSHIP: { key: Ownership; label: string; short: string; desc: st
   { key: "community", label: "Community", short: "Community", desc: "Released with Zinema, owned by the artist or label" },
 ];
 export const ownershipLabel = (k?: string | null) => OWNERSHIP.find((o) => o.key === k)?.label ?? "Zinema Original";
+
+/** Attendance selfies are kept for their month plus 5 days. `day` and `today` are YYYY-MM-DD (India). */
+export const SELFIE_GRACE_DAYS = 5;
+export function selfiesPurged(day: string, today: string): boolean {
+  const [y, m] = today.split("-").map(Number);
+  const prev = new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7);
+  const month = day.slice(0, 7);
+  if (month >= today.slice(0, 7)) return false;
+  return month < prev || Number(today.slice(8, 10)) >= SELFIE_GRACE_DAYS;
+}

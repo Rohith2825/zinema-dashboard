@@ -7,7 +7,7 @@ import { AttendanceMarker, type Office } from "@/components/attendance-marker";
 import { ListSkeleton } from "@/components/skeletons";
 import { Avatar, Badge, Empty, PageTitle } from "@/components/ui";
 import { getSession } from "@/lib/session";
-import { TZ, fmtDate, shortName, type Profile } from "@/lib/types";
+import { TZ, fmtDate, selfiesPurged, shortName, type Profile } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Attendance" };
 
@@ -115,6 +115,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
                   <button className="btn-ghost">Show</button>
                 </form>
               </div>
+              {selfiesPurged(day, today) && <p className="mt-3 text-xs text-muted">Selfies for this month have been removed (they&apos;re kept for the month plus 5 days). Times and locations stay on record.</p>}
               <ul className="mt-5 divide-y divide-black/[0.06]">
                 {expected.map((p) => {
                   const cin = dayRows.find((r) => r.user_id === p.id && r.kind === "check_in");
@@ -129,7 +130,9 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
                         </p>
                       </div>
                       {[cin, cout].map((r, i) =>
-                        r ? (
+                        r && selfiesPurged(r.day, today) ? (
+                          <span key={r.id} className="w-[88px] text-xs"><span className="block text-muted">{i === 0 ? "In" : "Out"}</span><span className="font-semibold">{time(r.at)}</span></span>
+                        ) : r ? (
                           <a key={r.id} href={`/api/attendance/selfie/${r.id}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs" title="Open selfie">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={`/api/attendance/selfie/${r.id}`} alt="" loading="lazy" className="h-10 w-10 rounded-lg bg-black/10 object-cover" />
