@@ -43,22 +43,22 @@ export function TaskBoard({ tasks }: { tasks: TaskCard[] }) {
               key={col.key}
               onDragOver={(e) => e.preventDefault()}
               onDrop={drop(col.key)}
-              className="min-h-64 rounded-xl bg-zinc-100/70 p-2"
+              className="well min-h-64 p-3"
             >
               <header className="mb-2 flex justify-between px-1 text-sm">
                 <h2 className="font-semibold text-zinc-700">{col.label}</h2>
-                <span className="text-xs text-zinc-500">{items.length}</span>
+                <span className="text-xs text-muted">{items.length}</span>
               </header>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {items.map((t) => (
                   <article
                     key={t.id}
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData("text/task", t.id)}
-                    className="cursor-grab rounded-lg border border-zinc-200 bg-white p-3 text-sm shadow-sm active:cursor-grabbing"
+                    className="tile tile-hover cursor-grab p-3.5 text-sm active:cursor-grabbing"
                   >
                     <p className={`font-medium ${t.status === "done" ? "text-zinc-400 line-through" : ""}`}>{t.title}</p>
-                    <div className="mt-1.5 flex flex-wrap gap-x-2 text-xs text-zinc-500">
+                    <div className="mt-1.5 flex flex-wrap gap-x-2 text-xs text-muted">
                       <span>{t.assignee ?? "Unassigned"}</span>
                       {t.due && <span className={t.overdue ? "font-medium text-red-600" : ""}>due {t.due}</span>}
                       {t.songCode && <Link href={`/songs/${t.songCode}`} className="text-brand-700">{t.songCode}</Link>}
@@ -75,7 +75,7 @@ export function TaskBoard({ tasks }: { tasks: TaskCard[] }) {
                           await setTaskStatus(t.id, status);
                         });
                       }}
-                      className="mt-2 w-full rounded border border-zinc-200 bg-zinc-50 px-1 py-0.5 text-xs md:hidden"
+                      className="input mt-2 !py-1 text-xs md:hidden"
                     >
                       {TASK_COLUMNS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
                     </select>

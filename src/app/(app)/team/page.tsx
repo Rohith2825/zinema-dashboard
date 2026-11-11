@@ -59,15 +59,15 @@ async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) 
         }
       />
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
         {/* Roster */}
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-6 sm:grid-cols-2">
           {people.map((p) => {
             const mine = members.filter((m) => m.user_id === p.id);
             const byPage = [...new Set(mine.map((m) => m.page_id))];
             const fresh = mine.length === 0 && !p.is_org_admin;
             return (
-              <li key={p.id} className={`card p-4 ${fresh ? "border-amber-300" : ""}`}>
+              <li key={p.id} className={`card p-5 ${fresh ? "ring-2 ring-amber-400/50" : ""}`}>
                 <div className="flex items-center gap-3">
                   <Avatar name={p.full_name} email={p.email} size={44} />
                   <div className="min-w-0 flex-1">
@@ -75,7 +75,7 @@ async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) 
                       {shortName(p)}
                       {p.id === s.user.id && <span className="ml-1.5 text-xs font-normal text-zinc-400">(you)</span>}
                     </p>
-                    <p className="truncate text-xs text-zinc-500">{p.email}</p>
+                    <p className="truncate text-xs text-muted">{p.email}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     {p.is_org_admin && <Badge tone="violet">Admin</Badge>}
@@ -84,7 +84,7 @@ async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) 
                 </div>
 
                 <div className="mt-3 space-y-1.5">
-                  {p.is_org_admin && <p className="text-xs text-zinc-500">Full access to every page.</p>}
+                  {p.is_org_admin && <p className="text-xs text-muted">Full access to every page.</p>}
                   {byPage.map((pid) => {
                     const pg = pageOf(pid);
                     const canEdit = s.roleOn(pid, ["page_admin"]);
@@ -95,7 +95,7 @@ async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) 
                           {pageShort(pg?.name)}
                         </span>
                         {mine.filter((m) => m.page_id === pid).map((m) => (
-                          <span key={m.role} className="inline-flex items-center gap-1 rounded-full bg-zinc-100 py-0.5 pl-2.5 pr-1.5 text-xs">
+                          <span key={m.role} className="inline-flex items-center gap-1 rounded-full bg-black/[0.05] py-0.5 pl-2.5 pr-1.5 text-xs">
                             {roleLabel(m.role)}
                             {canEdit && (
                               <ActionForm action={removeMember} confirm={`Remove ${shortName(p)} as ${roleLabel(m.role)} on ${pageShort(pg?.name)}?`}>
@@ -113,7 +113,7 @@ async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) 
                     );
                   })}
                   {fresh && (
-                    <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    <div className="flex items-center justify-between gap-2 rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-900">
                       <span>Signed in, but has no role yet.</span>
                       {adminPages.length > 0 && (
                         <Link href={`/team?person=${p.id}#give-role`} scroll={false} className="font-medium text-brand-700 hover:underline">
@@ -130,9 +130,9 @@ async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) 
 
         {/* Give a role */}
         {adminPages.length > 0 && (
-          <section id="give-role" className="card p-4 xl:sticky xl:top-6">
+          <section id="give-role" className="card p-6 xl:sticky xl:top-8">
             <h2 className="font-medium">Give someone a role</h2>
-            <p className="mb-4 mt-0.5 text-xs text-zinc-500">One person can hold different roles on different pages.</p>
+            <p className="mb-4 mt-0.5 text-xs text-muted">One person can hold different roles on different pages.</p>
             <RolePicker
               key={typeof sp.person === "string" ? sp.person : "none"}
               people={pickerPeople}

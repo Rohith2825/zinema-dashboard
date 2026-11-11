@@ -40,23 +40,23 @@ export function RolePicker({ people, pages, defaultPerson }: { people: PickerPer
       <fieldset>
         <legend className="label">1 · Who</legend>
         {person ? (
-          <div className="flex items-center gap-3 rounded-lg border border-brand-300 bg-brand-50 p-2.5">
+          <div className="flex items-center gap-3 rounded-2xl bg-background p-3 shadow-inset ring-2 ring-brand-500/50">
             <Avatar name={person.name} email={person.email} size={36} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{person.name}</p>
-              <p className="truncate text-xs text-zinc-500">{person.email}</p>
+              <p className="truncate text-xs text-muted">{person.email}</p>
             </div>
             <button type="button" onClick={() => setPersonId("")} className="text-xs font-medium text-brand-700 hover:underline">
               Change
             </button>
           </div>
         ) : (
-          <div className="rounded-lg border border-zinc-200">
+          <div className="well overflow-hidden !rounded-2xl">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name or email…"
-              className="w-full rounded-t-lg border-b border-zinc-200 px-3 py-2 text-sm outline-none focus:bg-brand-50/40"
+              className="hairline w-full border-b bg-transparent px-4 py-2.5 text-sm outline-none"
               aria-label="Search people"
             />
             <ul className="max-h-60 overflow-y-auto py-1" role="listbox" aria-label="People">
@@ -69,12 +69,12 @@ export function RolePicker({ people, pages, defaultPerson }: { people: PickerPer
                       role="option"
                       aria-selected={false}
                       onClick={() => setPersonId(p.id)}
-                      className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-zinc-50"
+                      className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/60"
                     >
                       <Avatar name={p.name} email={p.email} size={30} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">{p.name}</span>
-                        <span className="block truncate text-xs text-zinc-500">{p.email}</span>
+                        <span className="block truncate text-xs text-muted">{p.email}</span>
                       </span>
                       {fresh ? (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">Needs a role</span>
@@ -86,7 +86,7 @@ export function RolePicker({ people, pages, defaultPerson }: { people: PickerPer
                 );
               })}
               {matches.length === 0 && (
-                <li className="px-3 py-3 text-xs text-zinc-500">Nobody matches. People appear here after they sign in with Google once.</li>
+                <li className="px-3 py-3 text-xs text-muted">Nobody matches. People appear here after they sign in with Google once.</li>
               )}
             </ul>
           </div>
@@ -105,13 +105,13 @@ export function RolePicker({ people, pages, defaultPerson }: { people: PickerPer
                 type="button"
                 aria-pressed={on}
                 onClick={() => setPageId(p.id)}
-                className={`rounded-lg border px-3 py-2 text-left transition ${on ? "border-brand-500 bg-brand-50 ring-2 ring-brand-200" : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"}`}
+                className={`rounded-2xl px-3 py-2.5 text-left transition ${on ? "bg-background shadow-inset ring-2 ring-brand-500/60" : "tile"}`}
               >
                 <span className="flex items-center gap-1.5 text-sm font-medium">
                   <PageDot prefix={p.prefix} />
                   {p.name}
                 </span>
-                <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">
+                <span className="mt-0.5 block font-mono text-[11px] text-muted">
                   {p.prefix} · {p.members} {p.members === 1 ? "person" : "people"}
                 </span>
               </button>
@@ -134,17 +134,17 @@ export function RolePicker({ people, pages, defaultPerson }: { people: PickerPer
                 disabled={already}
                 aria-pressed={on}
                 onClick={() => setRole(r.key)}
-                className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${on ? "border-brand-500 bg-brand-50 ring-2 ring-brand-200" : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"}`}
+                className={`flex w-full items-start gap-3 rounded-2xl px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${on ? "bg-background shadow-inset ring-2 ring-brand-500/60" : "tile"}`}
               >
-                <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sm ${on ? "bg-brand-500 text-black" : "bg-zinc-900 text-white"}`}>
+                <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm ${on ? "bg-brand-500 text-black" : "bg-[#0d0d10] text-white"}`}>
                   {r.icon}
                 </span>
                 <span>
                   <span className="block text-sm font-medium">
                     {r.label}
-                    {already && <span className="ml-2 text-[11px] font-normal text-zinc-500">already has this</span>}
+                    {already && <span className="ml-2 text-[11px] font-normal text-muted">already has this</span>}
                   </span>
-                  <span className="block text-xs text-zinc-500">{r.desc}</span>
+                  <span className="block text-xs text-muted">{r.desc}</span>
                 </span>
               </button>
             );
@@ -152,14 +152,14 @@ export function RolePicker({ people, pages, defaultPerson }: { people: PickerPer
         </div>
       </fieldset>
 
-      <div className="rounded-lg bg-zinc-900 p-3 text-sm text-zinc-300">
+      <div className="rounded-2xl bg-[#0d0d10] p-4 text-sm text-zinc-300 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.7)]">
         {ready ? (
           <p>
             Give <b className="text-white">{person.name}</b> the <b className="text-brand-400">{roleInfo?.label}</b> role on{" "}
             <b className="text-white">{page.name}</b>.
           </p>
         ) : (
-          <p className="text-zinc-500">Pick a person, a page and a role.</p>
+          <p className="text-muted">Pick a person, a page and a role.</p>
         )}
         <button type="submit" disabled={!ready || pending} className="btn mt-3 w-full">
           {pending ? "Adding…" : "Add role"}

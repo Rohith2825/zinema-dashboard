@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: { default: "Zinema OS", template: "%s · Zinema OS" },
   description: DESCRIPTION,
   applicationName: "Zinema OS",
-  openGraph: { type: "website", siteName: "Zinema Music", title: "Zinema OS", description: DESCRIPTION, url: "/login" },
+  openGraph: { type: "website", siteName: "Zinema Music", title: "Zinema OS", description: DESCRIPTION, url: "/" },
   twitter: { card: "summary_large_image", title: "Zinema OS", description: DESCRIPTION },
   // Private workspace: only /login is indexable (set on that page).
   robots: { index: false, follow: false },

@@ -8,7 +8,7 @@ export function Skel({ className = "" }: Cls) {
 
 export function EqLoader({ label = "Loading" }: { label?: string }) {
   return (
-    <span role="status" className="inline-flex items-center gap-2 text-xs text-zinc-500">
+    <span role="status" className="inline-flex items-center gap-2 text-xs text-muted">
       <span className="eq-loader" aria-hidden="true"><i /><i /><i /><i /></span>
       {label}…
     </span>

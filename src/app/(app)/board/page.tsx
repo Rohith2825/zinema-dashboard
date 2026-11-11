@@ -3,7 +3,8 @@ import { BoardSkeleton } from "@/components/skeletons";
 import Link from "next/link";
 import { getSession, pageBySlug } from "@/lib/session";
 import { STAGES, type StageKey } from "@/lib/types";
-import { Badge, OwnershipTag, PageTabs, PageTitle, pageShort } from "@/components/ui";
+import { StageModal } from "@/components/stage-modal";
+import { Badge, OwnershipTag, PageDot, PageTabs, PageTitle, pageShort } from "@/components/ui";
 
 export default function BoardPage({ searchParams }: PageProps<"/board">) {
   return (
@@ -21,7 +22,7 @@ type SongRow = {
   current_stage: StageKey;
   planned_release_date: string | null;
   metadata: { language?: string | null; imported?: boolean } | null;
-  page: { name: string; slug: string } | null;
+  page: { name: string; slug: string; code_prefix: string } | null;
   deliverables: { kind: string; stage: StageKey; required: boolean; assignee_id: string | null; deliverable_versions: { status: string }[] }[];
   distribution_records: { isrc: string; distributor: string; legacy: boolean }[];
   song_formats: { status: string }[];
@@ -35,7 +36,7 @@ async function Board({ searchParams }: Pick<PageProps<"/board">, "searchParams">
   let q = s.supabase
     .from("songs")
     .select(
-      "id, code, title, ownership, current_stage, planned_release_date, metadata, page:pages(name, slug), deliverables(kind, stage, required, assignee_id, deliverable_versions(status)), distribution_records(isrc, distributor, legacy), song_formats(status)",
+      "id, code, title, ownership, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix), deliverables(kind, stage, required, assignee_id, deliverable_versions(status)), distribution_records(isrc, distributor, legacy), song_formats(status)",
     )
     .is("archived_at", null)
     .order("code");
@@ -55,22 +56,31 @@ async function Board({ searchParams }: Pick<PageProps<"/board">, "searchParams">
       />
       <PageTabs pages={s.pages} current={page?.slug} base="/board" />
       {error && <p className="mb-3 text-sm text-red-600">{error.message}</p>}
-      <div className="-mx-4 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
-        <div className="flex min-w-max gap-3">
-          {columns.map((col) => (
-            <section key={col.key} className="w-64 shrink-0 rounded-xl bg-zinc-100/70 p-2">
-              <header className="mb-2 flex items-center justify-between px-1">
-                <h2 className="text-sm font-semibold text-zinc-700">{col.label}</h2>
-                <span className="text-xs text-zinc-500">{col.songs.length}</span>
-              </header>
-              <div className="space-y-2">
-                {col.songs.map((song) => (
-                  <SongCard key={song.id} song={song} showPage={!page} />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+      {/* All eight stages on one screen: compact rows, each column scrolls on its own, ⤢ opens the full stage. */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 2xl:grid-cols-8">
+        {columns.map((col) => (
+          <section key={col.key} className="well flex h-[calc((100vh-19rem)/2)] min-h-56 flex-col p-2.5 2xl:h-[calc(100vh-17rem)]">
+            <header className="flex items-center justify-between px-1.5 pb-2 pt-1">
+              <h2 className="eyebrow truncate !text-zinc-700">{col.label}</h2>
+              <span className="flex items-center gap-1">
+                <span className="rounded-full bg-black/[0.06] px-1.5 text-[11px] font-medium text-zinc-600">{col.songs.length}</span>
+                <StageModal title={col.label} count={col.songs.length}>
+                  {col.songs.length === 0 ? (
+                    <p className="py-10 text-center text-sm text-muted">No songs at this stage.</p>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {col.songs.map((song) => <SongCard key={song.id} song={song} showPage={!page} />)}
+                    </div>
+                  )}
+                </StageModal>
+              </span>
+            </header>
+            <div className="-mx-1 flex-1 space-y-2 overflow-y-auto px-1 pb-1">
+              {col.songs.map((song) => <CompactCard key={song.id} song={song} />)}
+              {col.songs.length === 0 && <p className="px-1 pt-6 text-center text-[11px] text-zinc-400">Empty</p>}
+            </div>
+          </section>
+        ))}
       </div>
     </>
   );
@@ -88,9 +98,9 @@ function SongCard({ song, showPage }: { song: SongRow; showPage: boolean }) {
   const live = song.current_stage === "live";
 
   return (
-    <Link href={`/songs/${song.code}`} className="block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm hover:border-brand-300">
+    <Link href={`/songs/${song.code}`} className="tile block p-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[11px] text-zinc-500">{song.code}</span>
+        <span className="font-mono text-[11px] text-muted">{song.code}</span>
         {showPage && <Badge>{pageShort(song.page?.name)}</Badge>}
       </div>
       <p className="mt-1 font-medium leading-snug">{song.title}</p>
@@ -121,6 +131,27 @@ function SongCard({ song, showPage }: { song: SongRow; showPage: boolean }) {
         )}
         {song.planned_release_date && !live && <Badge tone="amber">Release {song.planned_release_date}</Badge>}
       </div>
+    </Link>
+  );
+}
+
+/** One-line-ish card for the single-screen board. Hover (or the expand view) shows the detail. */
+function CompactCard({ song }: { song: SongRow }) {
+  const inStage = song.deliverables.filter((d) => d.stage === song.current_stage && d.required);
+  const approved = inStage.filter((d) => d.deliverable_versions.some((v) => v.status === "approved")).length;
+  const waiting = song.deliverables.filter((d) => d.deliverable_versions.some((v) => v.status === "submitted")).length;
+  const pct = inStage.length ? Math.round((approved / inStage.length) * 100) : song.current_stage === "live" ? 100 : 0;
+  return (
+    <Link href={`/songs/${song.code}`} title={`${song.code} · ${song.title}`} className="tile block !rounded-xl px-2.5 py-2">
+      <span className="flex items-center gap-1.5 font-mono text-[10px] text-muted">
+        <PageDot prefix={song.page?.code_prefix} />
+        {song.code}
+        {waiting > 0 && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-sky-500" title={`${waiting} to check`} />}
+      </span>
+      <span className="mt-0.5 block truncate text-[13px] font-medium leading-snug">{song.title}</span>
+      <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-black/[0.07]">
+        <span className="block h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
+      </span>
     </Link>
   );
 }

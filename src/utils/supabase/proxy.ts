@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/brand/", "/robots.txt", "/sitemap.xml", "/icon", "/apple-icon", "/opengraph-image", "/twitter-image"];
+// Open without sign-in. The MCP endpoint does its own bearer-token check.
+const PUBLIC_PATHS = ["/login", "/auth", "/guide", "/api/mcp", "/.well-known", "/brand/", "/robots.txt", "/sitemap.xml", "/icon", "/apple-icon", "/opengraph-image", "/twitter-image"];
 
 // Refreshes the Supabase session cookie on every request and sends signed-out users to /login.
 export async function updateSession(request: NextRequest) {
@@ -29,10 +30,17 @@ export async function updateSession(request: NextRequest) {
   const signedIn = Boolean(data?.claims);
 
   const path = request.nextUrl.pathname;
+  // "/" is the public landing page; signed-in people go straight to their board.
+  if (path === "/") {
+    if (!signedIn) return response;
+    const url = request.nextUrl.clone();
+    url.pathname = "/board";
+    return NextResponse.redirect(url);
+  }
   if (!signedIn && !PUBLIC_PATHS.some((p) => path.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.search = path === "/" ? "" : `?next=${encodeURIComponent(path)}`;
+    url.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
     return NextResponse.redirect(url);
   }
   return response;

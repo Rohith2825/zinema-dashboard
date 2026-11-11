@@ -5,10 +5,12 @@ import { notFound } from "next/navigation";
 import {
   addChecklistItem, addComment, addContentSlot, addCredit, addDistribution, addFormat, advanceSong, assignDeliverable, createTask,
   generateContentPlan, markSlotLive, removeContentSlot, removeCredit, removeFormat, reviewVersion, saveRights, submitVersion,
-  toggleChecklistItem, unpublishFormat, publishFormat, updateFormat, updateSong,
+  openSongFolder, toggleChecklistItem, unpublishFormat, publishFormat, updateFormat, updateSong,
 } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
 import { Cover } from "@/components/cover";
+import { DriveUpload } from "@/components/drive-upload";
+import { folderUrl } from "@/lib/site";
 import { driveThumb } from "@/lib/drive";
 import { Badge, Empty, OwnershipTag, PageDot, VERSION_LABEL, VERSION_TONE, pageShort, type Tone } from "@/components/ui";
 import { getSession, type Session } from "@/lib/session";
@@ -55,7 +57,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
 
   const { data: song } = await db
     .from("songs")
-    .select("id, code, title, artists, cover_url, ownership, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix)")
+    .select("id, code, title, artists, cover_url, ownership, drive_folder_id, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix)")
     .eq("code", decodeURIComponent(code).toUpperCase())
     .maybeSingle();
   if (!song) notFound();
@@ -97,16 +99,16 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
   const stageIdx = STAGES.findIndex((x) => x.key === song.current_stage);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Header */}
       <div>
-        <Link href={`/board${page ? `?page=${page.slug}` : ""}`} className="text-sm text-zinc-500 hover:text-zinc-800">← Board</Link>
+        <Link href={`/board${page ? `?page=${page.slug}` : ""}`} className="text-sm text-muted hover:text-zinc-800">← Board</Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
-          <Cover src={driveThumb(song.cover_url, 400)} code={song.code} title={song.title} prefix={page?.code_prefix} className="w-24 shrink-0 rounded-xl shadow-sm sm:w-28" />
+          <Cover src={driveThumb(song.cover_url, 400)} code={song.code} title={song.title} prefix={page?.code_prefix} className="w-24 shrink-0 rounded-2xl shadow-raise sm:w-32" />
           <div>
-            <p className="font-mono text-xs text-zinc-500">{song.code}</p>
-            <h1 className="text-2xl font-semibold tracking-tight">{song.title}</h1>
+            <p className="font-mono text-xs text-muted">{song.code}</p>
+            <h1 className="text-3xl font-semibold tracking-tight">{song.title}</h1>
             <p className={`text-sm ${song.artists ? "text-zinc-600" : "italic text-zinc-400"}`}>{song.artists || "Artists not added yet"}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <OwnershipTag ownership={song.ownership} />
@@ -132,7 +134,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
             <li
               key={st.key}
               className={`rounded-full px-2.5 py-1 text-xs ${
-                i < stageIdx ? "bg-emerald-100 text-emerald-800" : i === stageIdx ? "bg-brand-500 text-black" : "bg-zinc-100 text-zinc-500"
+                i < stageIdx ? "bg-emerald-500/15 text-emerald-800" : i === stageIdx ? "bg-brand-500 text-black shadow-[0_6px_14px_-6px_rgba(252,124,15,0.8)]" : "bg-black/[0.05] text-muted"
               }`}
             >
               {i < stageIdx ? "✓ " : ""}{st.label}
@@ -141,9 +143,9 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
         </ol>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Deliverables by stage */}
-        <div className="space-y-3">
+        <div className="space-y-6">
           {meta.imported && deliverables.length === 0 ? (
             <Empty>Released before Zinema OS — no tracked files for this song.</Empty>
           ) : (
@@ -151,13 +153,13 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
               const items = deliverables.filter((d) => d.stage === st.key);
               return (
                 <details key={st.key} open={st.key === song.current_stage} className="card">
-                  <summary className="flex cursor-pointer items-center justify-between px-4 py-3">
+                  <summary className="flex cursor-pointer items-center justify-between px-6 py-4">
                     <span className="font-medium">{st.label}</span>
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-muted">
                       {items.filter((d) => d.deliverable_versions.some((v) => v.status === "approved")).length}/{items.length} approved
                     </span>
                   </summary>
-                  <ul className="divide-y divide-zinc-100 border-t border-zinc-100">
+                  <ul className="divide-y divide-black/[0.06] border-t border-black/[0.06]">
                     {items.map((d) => (
                       <DeliverableRow key={d.id} d={d} s={s} people={people} canWork={canWork} canCheck={canCheck} who={who} />
                     ))}
@@ -173,8 +175,8 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           />
 
           {/* Comments */}
-          <section className="card p-4">
-            <h2 className="mb-3 font-medium">Discussion</h2>
+          <section className="card p-6">
+            <h2 className="eyebrow mb-4">Discussion</h2>
             <ul className="mb-3 space-y-3">
               {(commentsR.data ?? []).map((c) => (
                 <li key={c.id} className="text-sm">
@@ -183,7 +185,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
                   <p className="mt-0.5 whitespace-pre-wrap text-zinc-700">{c.body}</p>
                 </li>
               ))}
-              {(commentsR.data ?? []).length === 0 && <li className="text-sm text-zinc-500">No comments yet.</li>}
+              {(commentsR.data ?? []).length === 0 && <li className="text-sm text-muted">No comments yet.</li>}
             </ul>
             <ActionForm action={addComment} resetOnSuccess className="space-y-2">
               <input type="hidden" name="song_id" value={song.id} />
@@ -194,9 +196,9 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
         </div>
 
         {/* Side panel */}
-        <div className="space-y-4">
-          <section className="card p-4">
-            <h2 className="mb-3 font-medium">Details</h2>
+        <div className="space-y-6">
+          <section className="card p-6">
+            <h2 className="eyebrow mb-4">Details</h2>
             <ActionForm action={updateSong} className="space-y-3">
               <input type="hidden" name="song_id" value={song.id} />
               <div>
@@ -216,6 +218,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
               <div>
                 <label className="label">Cover art (Drive link, shared “anyone with the link”)</label>
                 <input name="cover_url" defaultValue={song.cover_url ?? ""} placeholder="https://drive.google.com/file/d/…" className="input" disabled={!canWork} />
+                {canWork && <div className="mt-2"><DriveUpload coverForSong={song.id} label="Upload cover art" accept="image/*" /></div>}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -229,20 +232,33 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
               </div>
               {canWork && <Submit className="btn-ghost">Save</Submit>}
             </ActionForm>
+            <div className="mt-5 border-t border-black/[0.06] pt-4">
+              <p className="label">Google Drive folder</p>
+              {song.drive_folder_id ? (
+                <a href={folderUrl(song.drive_folder_id)} target="_blank" rel="noreferrer" className="btn-ghost w-full">Open the song folder ↗</a>
+              ) : canWork ? (
+                <ActionForm action={openSongFolder}>
+                  <input type="hidden" name="song_id" value={song.id} />
+                  <Submit className="btn-ghost w-full">Create the song folder</Submit>
+                </ActionForm>
+              ) : (
+                <p className="text-xs text-muted">Created on the first upload.</p>
+              )}
+            </div>
           </section>
 
           {/* Distribution */}
-          <section className="card p-4">
-            <h2 className="mb-3 font-medium">Distribution</h2>
+          <section className="card p-6">
+            <h2 className="eyebrow mb-4">Distribution</h2>
             {(distR.data ?? []).map((r) => (
               <dl key={r.id} className="mb-3 grid grid-cols-[90px_1fr] gap-y-1 text-sm">
-                <dt className="text-zinc-500">Distributor</dt>
+                <dt className="text-muted">Distributor</dt>
                 <dd>{r.distributor} {r.legacy && <Badge>legacy</Badge>}</dd>
-                <dt className="text-zinc-500">ISRC</dt><dd className="font-mono">{r.isrc}</dd>
-                {r.upc && (<><dt className="text-zinc-500">UPC</dt><dd className="font-mono">{r.upc}</dd></>)}
-                {r.catalog_number && (<><dt className="text-zinc-500">Catalog no.</dt><dd className="font-mono">{r.catalog_number}</dd></>)}
-                <dt className="text-zinc-500">Release</dt><dd>{fmtDate(r.release_date)}</dd>
-                {r.dsp_status && (<><dt className="text-zinc-500">Status</dt><dd>{r.dsp_status}</dd></>)}
+                <dt className="text-muted">ISRC</dt><dd className="font-mono">{r.isrc}</dd>
+                {r.upc && (<><dt className="text-muted">UPC</dt><dd className="font-mono">{r.upc}</dd></>)}
+                {r.catalog_number && (<><dt className="text-muted">Catalog no.</dt><dd className="font-mono">{r.catalog_number}</dd></>)}
+                <dt className="text-muted">Release</dt><dd>{fmtDate(r.release_date)}</dd>
+                {r.dsp_status && (<><dt className="text-muted">Status</dt><dd>{r.dsp_status}</dd></>)}
               </dl>
             ))}
             {canWork && (
@@ -268,12 +284,12 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           </section>
 
           {/* Credits */}
-          <section className="card p-4">
-            <h2 className="mb-3 font-medium">Credits</h2>
+          <section className="card p-6">
+            <h2 className="eyebrow mb-4">Credits</h2>
             <ul className="mb-3 space-y-1 text-sm">
               {(creditsR.data ?? []).map((c) => (
                 <li key={c.id} className="flex items-center justify-between gap-2">
-                  <span><span className="text-zinc-500">{c.role}:</span> {c.name}</span>
+                  <span><span className="text-muted">{c.role}:</span> {c.name}</span>
                   {canWork && (
                     <ActionForm action={removeCredit}>
                       <input type="hidden" name="id" value={c.id} />
@@ -282,7 +298,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
                   )}
                 </li>
               ))}
-              {(creditsR.data ?? []).length === 0 && <li className="text-zinc-500">No credits yet.</li>}
+              {(creditsR.data ?? []).length === 0 && <li className="text-muted">No credits yet.</li>}
             </ul>
             {canWork && (
               <ActionForm action={addCredit} resetOnSuccess className="flex gap-2">
@@ -300,13 +316,13 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
 
           {/* Rights — owners only */}
           {s.isOwner && (
-            <section className="card border-brand-200 p-4">
+            <section className="card p-6 ring-2 ring-brand-500/25">
               <h2 className="mb-1 font-medium">Royalty splits <Badge tone="violet">owners only</Badge></h2>
               <p className="mb-2 flex items-center gap-2 text-xs text-zinc-600">
                 <OwnershipTag ownership={song.ownership} />
                 {song.ownership === "community" ? "Artist/label owns the master — record Zinema's share." : "Zinema owns the master."}
               </p>
-              <p className="mb-3 text-xs text-zinc-500">One per line: Party, role, master|publishing, share %. Each type must total 100.</p>
+              <p className="mb-3 text-xs text-muted">One per line: Party, role, master|publishing, share %. Each type must total 100.</p>
               <ActionForm action={saveRights} className="space-y-2">
                 <input type="hidden" name="song_id" value={song.id} />
                 <textarea
@@ -325,13 +341,13 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           )}
 
           {/* Content plan */}
-          <section className="card p-4">
-            <h2 className="mb-3 font-medium">Content plan</h2>
+          <section className="card p-6">
+            <h2 className="eyebrow mb-4">Content plan</h2>
             <ul className="mb-3 space-y-2 text-sm">
               {(slotsR.data ?? []).map((c) => (
                 <li key={c.id} className="flex items-center justify-between gap-2">
                   <span>
-                    <span className="text-zinc-500">{fmtDate(c.planned_at, { day: "numeric", month: "short" })}</span> · {c.label}
+                    <span className="text-muted">{fmtDate(c.planned_at, { day: "numeric", month: "short" })}</span> · {c.label}
                     {c.went_live_at && <> <Badge tone="green">live</Badge></>}
                   </span>
                   {canWork && (
@@ -350,7 +366,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
                   )}
                 </li>
               ))}
-              {(slotsR.data ?? []).length === 0 && <li className="text-zinc-500">Nothing planned yet.</li>}
+              {(slotsR.data ?? []).length === 0 && <li className="text-muted">Nothing planned yet.</li>}
             </ul>
             {canWork && (
               <div className="space-y-3">
@@ -372,16 +388,16 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           </section>
 
           {/* Tasks */}
-          <section className="card p-4">
-            <h2 className="mb-3 font-medium">Tasks</h2>
+          <section className="card p-6">
+            <h2 className="eyebrow mb-4">Tasks</h2>
             <ul className="mb-3 space-y-1 text-sm">
               {(tasksR.data ?? []).map((t) => (
                 <li key={t.id} className="flex justify-between gap-2">
                   <span className={t.status === "done" ? "text-zinc-400 line-through" : ""}>{t.title}</span>
-                  <span className="shrink-0 text-xs text-zinc-500">{t.assignee_id ? who(t.assignee_id) : "unassigned"}</span>
+                  <span className="shrink-0 text-xs text-muted">{t.assignee_id ? who(t.assignee_id) : "unassigned"}</span>
                 </li>
               ))}
-              {(tasksR.data ?? []).length === 0 && <li className="text-zinc-500">No tasks.</li>}
+              {(tasksR.data ?? []).length === 0 && <li className="text-muted">No tasks.</li>}
             </ul>
             {canWork && (
               <ActionForm action={createTask} resetOnSuccess className="space-y-2">
@@ -401,8 +417,8 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           </section>
 
           {/* Activity */}
-          <section className="card p-4">
-            <h2 className="mb-3 font-medium">Activity</h2>
+          <section className="card p-6">
+            <h2 className="eyebrow mb-4">Activity</h2>
             <ul className="space-y-1.5 text-xs text-zinc-600">
               {(activityR.data ?? []).map((a) => (
                 <li key={a.id}>
@@ -445,7 +461,7 @@ function DeliverableRow({
   const mine = latest?.submitted_by === s.user.id;
 
   return (
-    <li className="px-4 py-3">
+    <li className="px-6 py-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{KIND_LABEL[d.kind]}{multi ? ` ${d.slot}` : ""}</span>
@@ -453,7 +469,7 @@ function DeliverableRow({
           {latest && <Badge tone={VERSION_TONE[latest.status]}>{VERSION_LABEL[latest.status]}</Badge>}
           {audit && <Badge tone={audit.verdict === "pass" ? "green" : audit.verdict === "warn" ? "amber" : "red"}>audit: {audit.verdict}</Badge>}
         </div>
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-muted">
           {d.assignee_id && <>maker {who(d.assignee_id)} · </>}
           {d.checker_id && <>checker {who(d.checker_id)} · </>}
           {d.due_at && <>due {fmtDate(d.due_at, { day: "numeric", month: "short" })}</>}
@@ -484,18 +500,20 @@ function DeliverableRow({
         )}
         {canWork && latest?.status !== "approved" && (
           <details className="w-full">
-            <summary className="cursor-pointer text-xs text-brand-700">{latest ? "Submit a new version" : "Submit Drive link"}</summary>
+            <summary className="cursor-pointer text-xs font-medium text-brand-700">{latest ? "Submit a new version" : "Submit a file"}</summary>
             <ActionForm action={submitVersion} resetOnSuccess className="mt-2 flex flex-wrap gap-2">
               <input type="hidden" name="deliverable_id" value={d.id} />
               <input name="drive_url" required placeholder="https://drive.google.com/…" className="input min-w-0 flex-1" />
               <input name="note" placeholder="Note (optional)" className="input w-40" />
               <Submit>Submit</Submit>
             </ActionForm>
+            <p className="eyebrow my-3">or upload from your computer</p>
+            <DriveUpload deliverableId={d.id} withNote label="Upload to Drive & submit" />
           </details>
         )}
         {canCheck && (
           <details className="w-full">
-            <summary className="cursor-pointer text-xs text-zinc-500">Assign</summary>
+            <summary className="cursor-pointer text-xs text-muted">Assign</summary>
             <ActionForm action={assignDeliverable} className="mt-2 flex flex-wrap gap-2">
               <input type="hidden" name="deliverable_id" value={d.id} />
               <select name="assignee_id" defaultValue={d.assignee_id ?? ""} className="input w-40">
@@ -516,7 +534,7 @@ function DeliverableRow({
       {versions.length > 1 && (
         <details className="mt-2">
           <summary className="cursor-pointer text-xs text-zinc-400">Earlier versions</summary>
-          <ul className="mt-1 space-y-0.5 text-xs text-zinc-500">
+          <ul className="mt-1 space-y-0.5 text-xs text-muted">
             {versions.slice(1).map((v) => (
               <li key={v.id}>
                 <a href={v.drive_url} target="_blank" rel="noreferrer" className="underline">v{v.version}</a> · {VERSION_LABEL[v.status]} · {who(v.submitted_by)}
@@ -539,14 +557,14 @@ function FormatsSection({
   const live = active.filter((f) => f.status === "live").length;
   return (
     <section className="card">
-      <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+      <header className="flex flex-wrap items-center justify-between gap-2 px-6 py-5">
         <div>
-          <h2 className="font-medium">Formats</h2>
-          <p className="text-xs text-zinc-500">Every version of this song: verticals, carousels, videos, audio — before and after release.</p>
+          <h2 className="text-lg font-semibold">Formats</h2>
+          <p className="text-xs text-muted">Every version of this song: verticals, carousels, videos, audio — before and after release.</p>
         </div>
-        <span className="text-xs text-zinc-500">{live}/{active.length} live</span>
+        <span className="text-xs text-muted">{live}/{active.length} live</span>
       </header>
-      <ul className="divide-y divide-zinc-100 border-t border-zinc-100">
+      <ul className="divide-y divide-black/[0.06] border-t border-black/[0.06]">
         {formats.map((f) => {
           const done = f.format_checklist.filter((c) => c.done_at).length;
           const total = f.format_checklist.length;
@@ -554,21 +572,21 @@ function FormatsSection({
           return (
             <li key={f.id}>
               <details>
-                <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 px-4 py-3">
+                <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 px-6 py-3.5">
                   <span className={`flex flex-wrap items-center gap-2 ${f.status === "dropped" ? "text-zinc-400 line-through" : ""}`}>
                     <span className="text-sm font-medium">{f.label}</span>
                     {f.label !== KIND_LABEL[f.kind] && !f.label.startsWith(KIND_LABEL[f.kind]) && <Badge>{KIND_LABEL[f.kind]}</Badge>}
                     {f.mandatory && <Badge>required</Badge>}
                     <Badge tone={FORMAT_TONE[f.status]}>{formatStatusLabel(f.status)}</Badge>
                   </span>
-                  <span className="text-xs text-zinc-500">
+                  <span className="text-xs text-muted">
                     {f.format_publications.length > 0 && <>{f.format_publications.length} posted · </>}
                     {total > 0 && <>{done}/{total} done · </>}
                     {f.owner_id && <>{who(f.owner_id)} · </>}
                     {f.went_live_at ? <>live {fmtDate(f.went_live_at, { day: "numeric", month: "short" })}</> : f.planned_at ? <>planned {fmtDate(f.planned_at, { day: "numeric", month: "short" })}</> : "no date"}
                   </span>
                 </summary>
-                <div className="space-y-4 border-t border-zinc-100 bg-zinc-50/50 px-4 py-3">
+                <div className="space-y-5 border-t border-black/[0.06] bg-black/[0.02] px-5 py-4">
                   {(f.live_url || f.drive_folder_url) && (
                     <p className="flex flex-wrap gap-3 text-xs">
                       {f.live_url && <a href={f.live_url} target="_blank" rel="noreferrer" className="text-brand-700 underline">Live post ↗</a>}
@@ -578,7 +596,7 @@ function FormatsSection({
 
                   {/* Checklist */}
                   <div>
-                    <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">Checklist</h3>
+                    <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Checklist</h3>
                     <ul className="space-y-1">
                       {[...f.format_checklist].sort((a, b) => a.position - b.position).map((c) => (
                         <li key={c.id}>
@@ -589,7 +607,7 @@ function FormatsSection({
                               type="submit"
                               disabled={!canWork}
                               aria-label={c.done_at ? `Untick ${c.label}` : `Tick ${c.label}`}
-                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${c.done_at ? "border-brand-500 bg-brand-500 text-black" : "border-zinc-400 bg-white"}`}
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${c.done_at ? "border-brand-500 bg-brand-500 text-black" : "border-transparent bg-background shadow-inset-sm"}`}
                             >
                               {c.done_at ? "✓" : ""}
                             </button>
@@ -613,8 +631,8 @@ function FormatsSection({
                   {/* Files (submit / review via the linked deliverable) */}
                   {d && (
                     <div>
-                      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">File</h3>
-                      <ul className="card">
+                      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">File</h3>
+                      <ul className="well !rounded-2xl">
                         <DeliverableRow d={d} s={s} people={people} canWork={canWork} canCheck={canCheck} who={who} />
                       </ul>
                     </div>
@@ -679,10 +697,10 @@ function FormatsSection({
             </li>
           );
         })}
-        {formats.length === 0 && <li className="px-4 py-3 text-sm text-zinc-500">No formats yet.</li>}
+        {formats.length === 0 && <li className="px-4 py-3 text-sm text-muted">No formats yet.</li>}
       </ul>
       {canWork && (
-        <ActionForm action={addFormat} resetOnSuccess className="flex flex-wrap gap-2 border-t border-zinc-100 px-4 py-3">
+        <ActionForm action={addFormat} resetOnSuccess className="flex flex-wrap gap-2 border-t border-black/[0.06] px-5 py-4">
           <input type="hidden" name="song_id" value={songId} />
           <select name="kind" className="input w-56" defaultValue="lyric_video" required>
             {types.map((t) => <option key={t.kind} value={t.kind}>{t.label}</option>)}
@@ -703,17 +721,17 @@ function Publications({ f, canWork, who }: { f: Format; canWork: boolean; who: (
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date());
   return (
     <div>
-      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">Published on</h3>
-      <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200 bg-white">
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Published on</h3>
+      <ul className="well divide-y divide-black/[0.06] !rounded-2xl">
         {platforms.map((pl) => {
           const pub = f.format_publications.find((p) => p.platform === pl);
           return (
             <li key={pl} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
-              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${pub ? "bg-brand-500 text-black" : "border border-zinc-300 text-transparent"}`}>✓</span>
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${pub ? "bg-brand-500 text-black" : "shadow-inset-sm text-transparent"}`}>✓</span>
               <span className="w-24 font-medium">{PLATFORM_LABEL[pl]}</span>
               {pub ? (
                 <>
-                  <span className="text-xs text-zinc-500">
+                  <span className="text-xs text-muted">
                     {fmtDate(pub.published_at, { day: "numeric", month: "short", year: "numeric" })}
                     {pub.published_by && <> · {who(pub.published_by)}</>}
                   </span>

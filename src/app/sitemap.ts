@@ -2,5 +2,9 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [{ url: `${SITE_URL}/login`, changeFrequency: "yearly", priority: 1 }];
+  return [
+    { url: `${SITE_URL}/`, changeFrequency: "monthly", priority: 1 },
+    { url: `${SITE_URL}/guide`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/login`, changeFrequency: "yearly", priority: 0.5 },
+  ];
 }

@@ -50,7 +50,7 @@ async function Inbox() {
               {checks.map((v) => (
                 <li key={v.id}>
                   <Link href={`/songs/${v.deliverable.song.code}`} className="hover:underline">
-                    <span className="font-mono text-xs text-zinc-500">{v.deliverable.song.code}</span> {v.deliverable.song.title} — {item(v)}
+                    <span className="font-mono text-xs text-muted">{v.deliverable.song.code}</span> {v.deliverable.song.title} — {item(v)}
                   </Link>
                   {v.deliverable.checker_id === s.user.id && <> <Badge tone="violet">assigned to you</Badge></>}
                 </li>
@@ -66,7 +66,7 @@ async function Inbox() {
               {fixes.map((v) => (
                 <li key={v.id}>
                   <Link href={`/songs/${v.deliverable.song.code}`} className="hover:underline">
-                    <span className="font-mono text-xs text-zinc-500">{v.deliverable.song.code}</span> {v.deliverable.song.title} — {item(v)} · {VERSION_LABEL[v.status]}
+                    <span className="font-mono text-xs text-muted">{v.deliverable.song.code}</span> {v.deliverable.song.title} — {item(v)} · {VERSION_LABEL[v.status]}
                   </Link>
                 </li>
               ))}
@@ -84,11 +84,11 @@ async function Inbox() {
             )}
           </div>
           {(notes ?? []).length ? (
-            <ul className="divide-y divide-zinc-100 text-sm">
+            <ul className="hairline divide-y divide-black/[0.06] text-sm">
               {(notes ?? []).map((n) => {
                 const song = n.song as unknown as { code: string; title: string } | null;
                 return (
-                  <li key={n.id} className={`flex justify-between gap-3 py-2 ${n.read_at ? "text-zinc-500" : ""}`}>
+                  <li key={n.id} className={`flex justify-between gap-3 py-2 ${n.read_at ? "text-muted" : ""}`}>
                     <span>
                       {!n.read_at && <span className="mr-2 inline-block h-2 w-2 rounded-full bg-brand-600" />}
                       {n.kind === "mention" ? "You were tagged: " : n.kind === "task_assigned" ? "New task: " : ""}

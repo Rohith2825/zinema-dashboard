@@ -80,12 +80,12 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
         }
       />
       <PageTabs pages={s.pages} current={page?.slug} base="/catalog" extra={extra} />
-      <div className="mb-5 flex flex-wrap gap-1 border-b border-zinc-200">
+      <div className="hairline mb-8 flex flex-wrap gap-1 border-b">
         {VIEWS.map((v) => (
           <Link
             key={v.key}
             href={href(v.key)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm ${view === v.key ? "border-brand-500 font-medium text-zinc-900" : "border-transparent text-zinc-500 hover:text-zinc-800"}`}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm ${view === v.key ? "border-brand-500 font-medium text-zinc-900" : "border-transparent text-muted hover:text-zinc-800"}`}
           >
             {v.label}
           </Link>
@@ -95,7 +95,7 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
             <Link
               key={label}
               href={href(view, o)}
-              className={`rounded-full px-2.5 py-1 text-xs ${own === o ? "bg-zinc-900 text-white" : "text-zinc-500 ring-1 ring-zinc-200 hover:bg-zinc-50"}`}
+              className={`rounded-full px-2.5 py-1 text-xs ${own === o ? "bg-[#0d0d10] text-white" : "text-muted hover:text-black"}`}
             >
               {label}
             </Link>
@@ -107,7 +107,7 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
       {songs.length === 0 ? (
         <Empty>No songs match{q ? ` “${q}”` : ""}.</Empty>
       ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
           {songs.map((song) => <SongCard key={song.id} song={song} />)}
         </ul>
       )}
@@ -126,25 +126,25 @@ function SongCard({ song }: { song: Row }) {
 
   return (
     <li>
-      <Link href={`/songs/${song.code}`} className="group block overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md">
+      <Link href={`/songs/${song.code}`} className="tile group block overflow-hidden !rounded-[22px] p-2">
         <div className="relative">
-          <Cover src={driveThumb(song.cover_url, 500)} code={song.code} title={song.title} prefix={song.page?.code_prefix} />
+          <Cover src={driveThumb(song.cover_url, 500)} code={song.code} title={song.title} prefix={song.page?.code_prefix} className="rounded-2xl" />
           <span className="absolute right-2 top-2"><OwnershipTag ownership={song.ownership} short /></span>
           <span className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${released ? "bg-brand-500 text-black" : "bg-white/90 text-zinc-800"}`}>
             {released ? "Released" : stageLabel(song.current_stage)}
           </span>
         </div>
-        <div className="space-y-2 p-3">
+        <div className="space-y-2 px-2 pb-2 pt-3">
           <div>
             <p className="truncate font-medium leading-snug group-hover:text-brand-700">{song.title}</p>
             <p className={`truncate text-xs ${song.artists ? "text-zinc-600" : "italic text-zinc-400"}`}>{song.artists || "Add artists"}</p>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
-            <PageDot prefix={song.page?.code_prefix} />
+          <div className="flex items-center gap-1.5 text-[11px] text-muted">
+            <PageDot prefix={song.page?.code_prefix} className="rounded-2xl" />
             <span className="truncate">{pageShort(song.page?.name)}{song.metadata?.language && song.metadata.language !== pageShort(song.page?.name) ? ` · ${song.metadata.language}` : ""}</span>
             <span className="ml-auto font-mono">{song.code}</span>
           </div>
-          <div className="flex items-center justify-between gap-2 border-t border-zinc-100 pt-2">
+          <div className="hairline flex items-center justify-between gap-2 border-t pt-2">
             <span className="flex gap-1" aria-label={`Formats: ${kinds.map((k) => KIND_LABEL[k]).join(", ") || "none yet"}`}>
               {kinds.slice(0, 6).map((k) => {
                 const st = formats.filter((f) => f.kind === k);
@@ -153,7 +153,7 @@ function SongCard({ song }: { song: Row }) {
                   <span
                     key={k}
                     title={`${KIND_LABEL[k]} · ${st.filter((f) => f.status === "live").length}/${st.length} live`}
-                    className={`flex h-5 w-5 items-center justify-center rounded text-[11px] ${on ? "bg-brand-500 text-black" : "bg-zinc-100 text-zinc-500"}`}
+                    className={`flex h-5 w-5 items-center justify-center rounded text-[11px] ${on ? "bg-brand-500 text-black" : "bg-black/[0.06] text-muted"}`}
                   >
                     {FORMAT_ICON[k] ?? "•"}
                   </span>
@@ -161,7 +161,7 @@ function SongCard({ song }: { song: Row }) {
               })}
               {kinds.length === 0 && <span className="text-[11px] text-zinc-400">No formats yet</span>}
             </span>
-            <span className="shrink-0 text-[11px] text-zinc-500">{live}/{formats.length} live{posts ? ` · ${posts} posts` : ""}</span>
+            <span className="shrink-0 text-[11px] text-muted">{live}/{formats.length} live{posts ? ` · ${posts} posts` : ""}</span>
           </div>
           {(releaseDate || dist?.isrc) && (
             <p className="flex justify-between text-[11px] text-zinc-400">

@@ -3,8 +3,11 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import type { ActionState } from "@/lib/types";
+import { STAGES, type ActionState } from "@/lib/types";
 import { parseDriveId } from "@/lib/drive";
+import { headers } from "next/headers";
+import { DriveError, createUploadSession, driveConfigured, ensureFolder, ensureSongFolder, getFile, shareWithLink } from "@/lib/google-drive";
+import { newToken, tokensEnabled } from "@/lib/mcp/auth";
 
 async function ctx() {
   const supabase = await createClient();
@@ -465,6 +468,104 @@ export async function removeMember(_: ActionState, fd: FormData): Promise<Action
 export async function markAllRead(): Promise<ActionState> {
   const { supabase, uid } = await ctx();
   await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("user_id", uid).is("read_at", null);
+  refresh();
+  return undefined;
+}
+
+// ─────────── Google Drive uploads ───────────
+// The browser sends the file straight to Google with a one-time session URL; we only start and record the upload.
+type UploadTarget = { deliverableId?: string; coverForSong?: string };
+export type UploadStart = { error?: string; sessionUrl?: string; folderId?: string };
+
+async function uploadFolder(supabase: Awaited<ReturnType<typeof ctx>>["supabase"], target: UploadTarget) {
+  if (target.coverForSong) {
+    const { id } = await ensureSongFolder(supabase, target.coverForSong);
+    return { songId: target.coverForSong, folderId: await ensureFolder("Cover art", id) };
+  }
+  const { data: d } = await supabase.from("deliverables").select("song_id, stage").eq("id", target.deliverableId!).maybeSingle();
+  if (!d) throw new DriveError("That item doesn't exist, or you can't see it.");
+  const { id } = await ensureSongFolder(supabase, d.song_id);
+  const stage = STAGES.find((x) => x.key === d.stage)?.label ?? d.stage;
+  return { songId: d.song_id as string, folderId: await ensureFolder(stage, id) };
+}
+
+export async function startUpload(target: UploadTarget, file: { name: string; type: string; size: number }): Promise<UploadStart> {
+  const { supabase } = await ctx();
+  if (!driveConfigured()) return { error: "Google Drive isn't connected yet. Paste a Drive link instead, or ask an admin to finish the Drive setup." };
+  try {
+    const { songId, folderId } = await uploadFolder(supabase, target);
+    const { data: can } = await supabase.rpc("can_work_on_song", { p_song: songId });
+    if (!can) return { error: "You can view this song but not add files to it." };
+    const h = await headers();
+    const origin = h.get("origin") ?? `https://${h.get("host")}`;
+    const sessionUrl = await createUploadSession({ name: file.name, mimeType: file.type, size: file.size, parentId: folderId, origin });
+    return { sessionUrl, folderId };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Couldn't start the upload." };
+  }
+}
+
+export async function finishUpload(target: UploadTarget, fileId: string, folderId: string, note?: string): Promise<ActionState> {
+  const { supabase, uid } = await ctx();
+  try {
+    const expected = await uploadFolder(supabase, target);
+    const file = await getFile(fileId);
+    if (expected.folderId !== folderId || !file.parents?.includes(folderId)) return fail("That file isn't in this song's folder.");
+    const link = file.webViewLink ?? `https://drive.google.com/file/d/${file.id}/view`;
+    if (target.coverForSong) {
+      await shareWithLink(file.id).catch(() => undefined); // cover thumbnails need link sharing; fine if the drive forbids it
+      const { error } = await supabase.from("songs").update({ cover_url: link }).eq("id", target.coverForSong);
+      if (error) return fail(friendly(error));
+    } else {
+      const { error } = await supabase.from("deliverable_versions").insert({
+        deliverable_id: target.deliverableId!,
+        drive_url: link,
+        drive_file_id: file.id,
+        mime_type: file.mimeType,
+        size_bytes: file.size ? Number(file.size) : null,
+        md5: file.md5Checksum ?? null,
+        note: note?.trim() || null,
+        submitted_by: uid,
+      });
+      if (error) return fail(friendly(error));
+    }
+    refresh();
+    return { ok: target.coverForSong ? "Cover art saved." : "Uploaded and submitted for checking." };
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "Couldn't record the upload.");
+  }
+}
+
+export async function openSongFolder(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  if (!driveConfigured()) return fail("Google Drive isn't connected yet.");
+  try {
+    await ensureSongFolder(supabase, str(fd, "song_id")!);
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "Couldn't create the folder.");
+  }
+  refresh();
+  return { ok: "Drive folder ready." };
+}
+
+// ─────────── AI connections (MCP tokens) ───────────
+type TokenState = { error?: string; ok?: string; token?: string } | undefined;
+export async function createMcpToken(_: TokenState, fd: FormData): Promise<TokenState> {
+  const { supabase } = await ctx();
+  if (!tokensEnabled()) return { error: "Personal tokens aren't switched on yet (an admin needs to add SUPABASE_JWT_SECRET). Connecting with sign-in still works." };
+  const name = str(fd, "name");
+  if (!name) return { error: "Give the token a name, like “Claude Code on my laptop”." };
+  const t = newToken();
+  const { error } = await supabase.from("mcp_tokens").insert({ name, prefix: t.prefix, token_hash: t.hash });
+  if (error) return { error: friendly(error) };
+  refresh();
+  return { ok: "Token created. Copy it now — it won't be shown again.", token: t.token };
+}
+
+export async function revokeMcpToken(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("mcp_tokens").update({ revoked_at: new Date().toISOString() }).eq("id", str(fd, "id")!);
+  if (error) return fail(friendly(error));
   refresh();
   return undefined;
 }

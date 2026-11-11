@@ -18,7 +18,7 @@ const KINDS = [
   { key: "format", label: "Formats", dot: "bg-violet-500", chip: "bg-violet-100 text-violet-900" },
   { key: "content", label: "Content", dot: "bg-sky-500", chip: "bg-sky-100 text-sky-900" },
   { key: "task_due", label: "Task due", dot: "bg-amber-500", chip: "bg-amber-100 text-amber-900" },
-  { key: "deliverable_due", label: "File due", dot: "bg-zinc-400", chip: "bg-zinc-100 text-zinc-700" },
+  { key: "deliverable_due", label: "File due", dot: "bg-zinc-400", chip: "bg-black/[0.06] text-zinc-700" },
 ] as const;
 
 type Event = { kind: string; page_id: string; song_id: string | null; ref_id: string | null; title: string; at: string; state: string };
@@ -71,7 +71,7 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
     for (const [k, v] of Object.entries(merged)) if (v) qs.set(k, v);
     return `/calendar?${qs}`;
   };
-  const tab = (active: boolean) => `rounded-md px-2.5 py-1 text-sm ${active ? "bg-white shadow-sm ring-1 ring-zinc-200" : "text-zinc-600"}`;
+  const tab = (active: boolean) => `rounded-full px-3 py-1 text-sm ${active ? "bg-surface font-medium shadow-raise-sm" : "text-zinc-600 hover:text-black"}`;
 
   return (
     <>
@@ -79,7 +79,7 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
         title="Calendar"
         sub="Song releases and content go-live dates, in IST."
         actions={
-          <div className="flex items-center gap-1 rounded-lg bg-zinc-100 p-1">
+          <div className="well flex items-center gap-1 !rounded-full p-1">
             <Link href={link({ view: undefined })} className={tab(view === "all")}>All</Link>
             <Link href={link({ view: "releases" })} className={tab(view === "releases")}>Releases</Link>
             <Link href={link({ view: "content" })} className={tab(view === "content")}>Content</Link>
@@ -104,8 +104,8 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
 
       {/* Month grid (md+) */}
       <div className="card hidden overflow-hidden md:block">
-        <div className="grid grid-cols-7 border-b border-zinc-200 bg-zinc-50 text-xs font-medium text-zinc-500">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => <div key={d} className="px-2 py-1.5">{d}</div>)}
+        <div className="hairline grid grid-cols-7 border-b text-xs font-medium text-muted">
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => <div key={d} className="px-3 py-2.5">{d}</div>)}
         </div>
         <div className="grid grid-cols-7">
           {days.map((d) => {
@@ -113,11 +113,11 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
             const inMonth = d.getUTCMonth() === m - 1;
             const list = byDay.get(key) ?? [];
             return (
-              <div key={key} className={`min-h-28 border-b border-r border-zinc-100 p-1.5 ${inMonth ? "" : "bg-zinc-50/60 text-zinc-400"}`}>
+              <div key={key} className={`min-h-28 border-b border-r border-black/[0.05] p-2 ${inMonth ? "" : "bg-black/[0.025] text-zinc-400"}`}>
                 <div className={`mb-1 text-xs ${key === todayStr ? "inline-block rounded-full bg-brand-500 px-1.5 text-black" : ""}`}>{d.getUTCDate()}</div>
                 <div className="space-y-1">
                   {list.slice(0, 4).map((e, i) => <Chip key={i} e={e} code={codeOf(e.song_id)} />)}
-                  {list.length > 4 && <p className="text-[11px] text-zinc-500">+{list.length - 4} more</p>}
+                  {list.length > 4 && <p className="text-[11px] text-muted">+{list.length - 4} more</p>}
                 </div>
               </div>
             );
@@ -129,14 +129,14 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
       <div className="space-y-2 md:hidden">
         {[...byDay.entries()].filter(([k]) => k.startsWith(monthStr)).map(([k, list]) => (
           <div key={k} className="card p-3">
-            <p className="mb-1 text-xs font-medium text-zinc-500">{k}</p>
+            <p className="mb-1 text-xs font-medium text-muted">{k}</p>
             <div className="space-y-1">{list.map((e, i) => <Chip key={i} e={e} code={codeOf(e.song_id)} />)}</div>
           </div>
         ))}
-        {events.length === 0 && <p className="text-sm text-zinc-500">Nothing this month.</p>}
+        {events.length === 0 && <p className="text-sm text-muted">Nothing this month.</p>}
       </div>
       {events.length === 0 && (
-        <p className="mt-3 hidden text-sm text-zinc-500 md:block">
+        <p className="mt-3 hidden text-sm text-muted md:block">
           Nothing scheduled this month. Set a planned release date on a song, then use “Plan 3 carousels + 3 verticals” on its page.
         </p>
       )}

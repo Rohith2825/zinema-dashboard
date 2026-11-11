@@ -23,7 +23,7 @@ async function NewSong({ searchParams }: Pick<PageProps<"/songs/new">, "searchPa
   return (
     <div className="max-w-lg">
       <PageTitle title="New song" sub="Creates the song's stages and its required items (lyrics, master, artwork, 3 carousels, 3 verticals…)." />
-      <ActionForm action={createSong} className="card space-y-4 p-5">
+      <ActionForm action={createSong} className="card space-y-5 p-7">
         <div>
           <label className="label" htmlFor="title">Title</label>
           <input id="title" name="title" required className="input" placeholder="e.g. Kaadhal Mazhai" />
@@ -53,11 +53,11 @@ async function NewSong({ searchParams }: Pick<PageProps<"/songs/new">, "searchPa
           <legend className="label">Ownership</legend>
           <div className="grid grid-cols-2 gap-2">
             {OWNERSHIP.map((o) => (
-              <label key={o.key} className="flex cursor-pointer items-start gap-2 rounded-lg border border-zinc-200 p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 has-[:checked]:ring-2 has-[:checked]:ring-brand-200">
+              <label key={o.key} className="flex cursor-pointer items-start gap-2 tile p-3.5 has-[:checked]:shadow-inset has-[:checked]:ring-2 has-[:checked]:ring-brand-500/60">
                 <input type="radio" name="ownership" value={o.key} defaultChecked={o.key === "original"} className="mt-0.5 accent-[#fc7c0f]" />
                 <span>
                   <span className="block text-sm font-medium">{o.label}</span>
-                  <span className="block text-xs text-zinc-500">{o.desc}</span>
+                  <span className="block text-xs text-muted">{o.desc}</span>
                 </span>
               </label>
             ))}
