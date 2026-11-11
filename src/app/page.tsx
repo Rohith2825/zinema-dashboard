@@ -191,20 +191,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Numbers */}
-      <section className={`${W} mt-16 md:mt-24`}>
-        <dl className="card grid grid-cols-2 gap-y-8 px-6 py-8 text-center md:grid-cols-4 md:py-10">
-          {[["8", "stages, one direction"], ["5", "pages, one team"], ["3 + 3", "carousels & verticals per song"], ["21", "songs released so far"]].map(([n, l]) => (
-            <div key={l}>
-              <dt className="text-3xl font-semibold tracking-tight md:text-5xl">{n}</dt>
-              <dd className="mx-auto mt-2 max-w-[11rem] text-xs text-muted md:text-sm">{l}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
       {/* Pipeline */}
-      <section id="platform" className={`${W} mt-24 md:mt-36`}>
+      <section id="platform" className={`${W} mt-20 md:mt-32`}>
         <p className="eyebrow">The pipeline</p>
         <h2 className="mt-3 max-w-2xl text-3xl font-semibold md:text-5xl">Eight stages. One direction. No guessing.</h2>
         <p className="mt-4 max-w-2xl text-muted md:text-lg">Each stage has things that must exist and a check that must pass. Nothing is skipped: the song only moves when an approver signs off.</p>

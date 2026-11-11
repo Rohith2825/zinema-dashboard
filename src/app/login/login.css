@@ -50,22 +50,6 @@
   to { transform: scale(4.6); opacity: 0; }
 }
 
-/* Waveforms drifting across */
-.zl-wave {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 200%;
-  height: 160px;
-  margin-top: -80px;
-  z-index: -2;
-  opacity: 0.55;
-  animation: zl-drift 14s linear infinite;
-  pointer-events: none;
-}
-.zl-wave + .zl-wave { opacity: 0.28; animation-duration: 22s; animation-direction: reverse; }
-@keyframes zl-drift { to { transform: translateX(-50%); } }
-
 /* Equalizer along the bottom edge */
 .zl-eq {
   position: absolute;

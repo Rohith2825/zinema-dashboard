@@ -25,17 +25,6 @@ const BARS = Array.from({ length: 64 }, (_, i) => {
   } as React.CSSProperties;
 });
 
-// One period of a waveform, repeated so the drift loops seamlessly.
-function wavePath(seed: number) {
-  const pts: string[] = [];
-  for (let x = 0; x <= 2400; x += 8) {
-    const t = (x / 1200) * Math.PI * 2;
-    const y = 80 + Math.sin(t * 3 + seed) * 22 * Math.sin(t * 1 + seed) + Math.sin(t * 11 + seed) * 9 * Math.cos(t * 2);
-    pts.push(`${x},${y.toFixed(1)}`);
-  }
-  return `M${pts.join(" L")}`;
-}
-
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <main className="zl">
@@ -43,11 +32,6 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       <div className="zl-rings" aria-hidden="true">
         {[0, 1, 2, 3].map((n) => <i key={n} style={{ "--n": n } as React.CSSProperties} />)}
       </div>
-      {[0.6, 2.1].map((seed) => (
-        <svg key={seed} className="zl-wave" viewBox="0 0 2400 160" preserveAspectRatio="none" aria-hidden="true">
-          <path d={wavePath(seed)} fill="none" stroke="#fc7c0f" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-        </svg>
-      ))}
       <div className="zl-eq" aria-hidden="true">
         {BARS.map((style, i) => <i key={i} style={style} />)}
       </div>
