@@ -721,3 +721,14 @@ export async function setAttendanceRequired(_: ActionState, fd: FormData): Promi
   refresh();
   return undefined;
 }
+
+/** Same as setAttendanceRequired, callable straight from the switch so it can flip instantly. */
+export async function toggleAttendanceRequired(userId: string, required: boolean): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const { error } = required
+    ? await supabase.from("attendance_members").upsert({ user_id: userId })
+    : await supabase.from("attendance_members").delete().eq("user_id", userId);
+  if (error) return fail(friendly(error));
+  refresh();
+  return undefined;
+}

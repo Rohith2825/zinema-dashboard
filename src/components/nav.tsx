@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const I = ({ d }: { d: string }) => (
@@ -69,9 +70,24 @@ export function NavLinks({ path, unread = 0 }: { path: string; unread?: number }
   );
 }
 
-/** Phone navigation: four main tabs plus "More" for everything else. */
+/** Phone navigation: four main tabs plus "More" for everything else. The More sheet closes on any choice, on a tap outside, and on Escape. */
 export function MobileTabs({ unread = 0 }: { unread?: number }) {
   const path = usePathname();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+
   const all = GROUPS.flatMap((g) => g.links);
   const main = all.slice(0, 4);
   const rest = all.slice(4);
@@ -79,30 +95,30 @@ export function MobileTabs({ unread = 0 }: { unread?: number }) {
   const restActive = rest.some((l) => is(l.href));
   const item = (active: boolean) => `flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-1.5 text-[10px] font-medium ${active ? "text-white" : "text-neutral-500"}`;
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-30 md:hidden" aria-label="Main">
+    <nav ref={ref} className="fixed inset-x-3 bottom-3 z-30 md:hidden" aria-label="Main">
       <div className="relative flex items-stretch rounded-[26px] bg-[#0b0b0d]/95 px-2 py-1.5 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] backdrop-blur">
         {main.map((l) => (
-          <Link key={l.href} href={l.href} aria-current={is(l.href) ? "page" : undefined} className={item(is(l.href))}>
+          <Link key={l.href} href={l.href} onClick={() => setOpen(false)} aria-current={is(l.href) ? "page" : undefined} className={item(is(l.href))}>
             <span className={is(l.href) ? "text-brand-500" : ""}><I d={l.icon} /></span>
             {l.label}
           </Link>
         ))}
-        <details className="group flex flex-1">
-          <summary className={`${item(restActive)} relative cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
-            <span className={restActive ? "text-brand-500" : ""}><I d="M5 12h.01M12 12h.01M19 12h.01" /></span>
-            More
-            {unread > 0 && <span className="absolute right-3 top-1 h-2 w-2 rounded-full bg-brand-500" />}
-          </summary>
-          <div className="absolute bottom-[calc(100%+10px)] right-0 w-56 rounded-3xl bg-[#0b0b0d] p-2 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]">
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-haspopup="menu" className={`${item(restActive || open)} relative`}>
+          <span className={restActive || open ? "text-brand-500" : ""}><I d="M5 12h.01M12 12h.01M19 12h.01" /></span>
+          More
+          {unread > 0 && <span className="absolute right-3 top-1 h-2 w-2 rounded-full bg-brand-500" />}
+        </button>
+        {open && (
+          <div role="menu" className="lb-fade absolute bottom-[calc(100%+10px)] right-0 w-56 rounded-3xl bg-[#0b0b0d] p-2 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]">
             {rest.map((l) => (
-              <Link key={l.href} href={l.href} className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm ${is(l.href) ? "bg-white/10 text-white" : "text-neutral-300"}`}>
+              <Link key={l.href} href={l.href} role="menuitem" onClick={() => setOpen(false)} className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm ${is(l.href) ? "bg-white/10 text-white" : "text-neutral-300"}`}>
                 <span className={is(l.href) ? "text-brand-500" : "text-neutral-500"}><I d={l.icon} /></span>
                 {l.label}
                 {l.href === "/inbox" && unread > 0 && <span className="ml-auto rounded-full bg-brand-500 px-1.5 text-[11px] font-semibold text-black">{unread}</span>}
               </Link>
             ))}
           </div>
-        </details>
+        )}
       </div>
     </nav>
   );

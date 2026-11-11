@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { addOffice, setAttendanceRequired, setOfficeActive } from "@/app/actions";
+import { addOffice, setOfficeActive } from "@/app/actions";
+import { AttendanceSwitch } from "@/components/attendance-switch";
 import { ActionForm, Submit } from "@/components/action-form";
 import { AttendanceMarker, type Office } from "@/components/attendance-marker";
 import { ListSkeleton } from "@/components/skeletons";
@@ -219,6 +220,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
           {s.isOwner && (
             <section className="card p-5 md:p-6">
               <p className="eyebrow">Who must mark attendance</p>
+              <p className="mt-1 text-xs text-muted">{required.size} of {people.length} switched on</p>
               <ul className="mt-4 space-y-2">
                 {people.map((p) => {
                   const on = required.has(p.id);
@@ -229,18 +231,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
                         <p className="truncate text-sm font-medium">{shortName(p)}</p>
                         <p className="truncate text-xs text-muted">{p.email}</p>
                       </div>
-                      <ActionForm action={setAttendanceRequired}>
-                        <input type="hidden" name="user_id" value={p.id} />
-                        <input type="hidden" name="required" value={on ? "0" : "1"} />
-                        <button
-                          role="switch"
-                          aria-checked={on}
-                          aria-label={`Attendance required for ${shortName(p)}`}
-                          className={`relative h-6 w-11 rounded-full transition ${on ? "bg-brand-500" : "bg-background shadow-inset-sm"}`}
-                        >
-                          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? "left-[22px]" : "left-0.5"}`} />
-                        </button>
-                      </ActionForm>
+                      <AttendanceSwitch userId={p.id} name={shortName(p)} on={on} />
                     </li>
                   );
                 })}
