@@ -45,9 +45,9 @@ const PIPELINE: { key: string; label: string; needs: string[]; check: string }[]
 
 function PipelineArt() {
   return (
-    <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <ol className="-mx-4 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
       {PIPELINE.map((st, i) => (
-        <li key={st.key} className="card relative flex flex-col p-5">
+        <li key={st.key} className="card relative flex w-[78%] shrink-0 snap-center flex-col p-5 sm:w-auto">
           <div className="flex items-center justify-between">
             <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${i === 7 ? "bg-brand-500 text-black" : "bg-[#0d0d10] text-white"}`}>{i + 1}</span>
             {i < 7 && (
@@ -197,6 +197,7 @@ export default function Landing() {
         <h2 className="mt-3 max-w-2xl text-3xl font-semibold md:text-5xl">Eight stages. One direction. No guessing.</h2>
         <p className="mt-4 max-w-2xl text-muted md:text-lg">Each stage has things that must exist and a check that must pass. Nothing is skipped: the song only moves when an approver signs off.</p>
         <PipelineArt />
+        <p className="mt-1 text-center text-xs text-muted sm:hidden">Swipe through the eight stages →</p>
       </section>
 
       {/* Feature rows */}
@@ -235,14 +236,14 @@ export default function Landing() {
       <section className={`${W} mt-24 md:mt-32`}>
         <p className="eyebrow">And the everyday things</p>
         <h2 className="mt-3 max-w-2xl text-3xl font-semibold md:text-5xl">Built around how the team actually works.</h2>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {[
             ["M5 6h14v14H5zM5 10h14M9 3v4M15 3v4", "Calendars that agree", "Song releases and content drops on one calendar, in India time."],
             ["M4 7l2 2 3-4M4 16l2 2 3-4M13 7h7M13 17h7", "Tasks and @mentions", "Assign, tag and follow up without leaving the song."],
             ["M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z", "Attendance", "Check in from the office with your location and a selfie."],
             ["M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z", "Private where it matters", "Royalty splits and contracts are visible to rights owners only."],
           ].map(([d, t, b]) => (
-            <div key={t} className="card p-6">
+            <div key={t} className="card p-4 sm:p-6">
               <span className="tile flex h-11 w-11 items-center justify-center !rounded-2xl text-brand-600">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>
               </span>
@@ -258,9 +259,9 @@ export default function Landing() {
         <p className="eyebrow">Access &amp; pricing</p>
         <h2 className="mt-3 max-w-2xl text-3xl font-semibold md:text-5xl">Built for the team. Open by invitation.</h2>
         <p className="mt-4 max-w-2xl text-muted md:text-lg">Zinema OS isn&apos;t sold as software. It&apos;s how Zinema Music works — and how the people we work with stay in the loop.</p>
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="-mx-4 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
           {PLANS.map((p) => (
-            <div key={p.name} className={`flex flex-col p-7 md:p-8 ${p.primary ? "rounded-[22px] bg-[#0b0b0d] text-white shadow-[0_30px_70px_-30px_rgba(0,0,0,0.7)]" : "card"}`}>
+            <div key={p.name} className={`flex w-[82%] shrink-0 snap-center flex-col p-7 md:w-auto md:p-8 ${p.primary ? "rounded-[22px] bg-[#0b0b0d] text-white shadow-[0_30px_70px_-30px_rgba(0,0,0,0.7)]" : "card"}`}>
               <p className={`eyebrow ${p.primary ? "!text-brand-400" : ""}`}>{p.name}</p>
               <p className="mt-4 text-3xl font-semibold">{p.price}</p>
               <p className={`mt-1 text-sm ${p.primary ? "text-neutral-400" : "text-muted"}`}>{p.note}</p>

@@ -51,12 +51,12 @@ export function LiveBoard() {
                 <span className="truncate">{st.label}</span>
                 <span className="text-muted">{here.length}</span>
               </p>
-              <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-1.5 sm:block sm:space-y-1.5">
                 {here.map(({ s, i }) => (
-                  <div key={s.code} className={`tile flex items-center gap-1.5 !rounded-xl p-1 md:gap-2 md:p-1.5 ${i === last ? "lb-pop ring-2 ring-brand-500/70" : ""}`}>
+                  <div key={s.code} className={`tile flex items-center justify-center gap-1.5 !rounded-xl p-1 sm:justify-start md:gap-2 md:p-1.5 ${i === last ? "lb-pop ring-2 ring-brand-500/70" : ""}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={s.cover} alt="" loading="lazy" className="h-6 w-6 shrink-0 rounded-md bg-[#0d0d10] object-cover md:h-8 md:w-8 md:rounded-lg" />
-                    <span className="min-w-0">
+                    <img src={s.cover} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded-lg bg-[#0d0d10] object-cover sm:h-6 sm:w-6 sm:rounded-md md:h-8 md:w-8 md:rounded-lg" />
+                    <span className="hidden min-w-0 sm:block">
                       <span className="block truncate text-[9px] font-semibold leading-tight md:text-[11px]">{s.title}</span>
                       <span className="hidden font-mono text-[8px] text-muted md:block">{s.code}</span>
                     </span>

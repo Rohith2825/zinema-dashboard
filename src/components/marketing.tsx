@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandIcon, type Brand } from "@/components/landing/logos";
 
 /** Shared header and footer for the public pages (landing, guide). */
 export function PublicHeader() {
@@ -19,17 +20,54 @@ export function PublicHeader() {
   );
 }
 
+const FOOT: { title: string; links: [string, string, boolean?][] }[] = [
+  { title: "Zinema OS", links: [["The pipeline", "/#platform"], ["Bring your AI", "/#ai"], ["Access & pricing", "/#access"], ["Sign in", "/login"]] },
+  { title: "Listen", links: [["Spotify", "https://open.spotify.com/artist/5zUwzGZwhIgnPZPNZyHcaw", true], ["YouTube", "https://www.youtube.com/@ZinemaMusicOfficial", true], ["Instagram", "https://www.instagram.com/zinema.music", true]] },
+  { title: "Legal", links: [["Privacy policy", "/privacy"], ["Terms of use", "/terms"]] },
+  { title: "Contact", links: [["info@zinema.music", "mailto:info@zinema.music"], ["Ask for access", "mailto:info@zinema.music?subject=Access%20to%20Zinema%20OS"], ["Partner with us", "mailto:info@zinema.music?subject=Partnering%20with%20Zinema%20Music"]] },
+];
+
 export function PublicFooter() {
   return (
-    <footer className="mx-auto mt-28 w-[min(1120px,calc(100%-2rem))] pb-12">
-      <div className="card flex flex-wrap items-center justify-between gap-6 px-6 py-7 md:px-8">
-        <div>
-          <p className="text-sm font-semibold">Zinema Music · It Just Hits</p>
-          <p className="mt-1 text-xs text-muted">Zinema OS is the private workspace of the Zinema Music team.</p>
+    <footer className="mx-auto mt-24 w-[min(1120px,calc(100%-2rem))] pb-10 md:mt-32">
+      <div className="card overflow-hidden !rounded-[32px] !shadow-raise-lg">
+        <div className="grid gap-10 p-7 md:grid-cols-[1.3fr_2fr] md:p-12">
+          <div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/zinema-logo-ink.png" alt="Zinema Music — It Just Hits" width={220} height={81} className="h-auto w-44 md:w-52" />
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-muted">
+              Zinema OS is the private workspace of the Zinema Music team: every song, from first lyric to live.
+            </p>
+            <div className="mt-6 flex gap-3">
+              {([["spotify", "https://open.spotify.com/artist/5zUwzGZwhIgnPZPNZyHcaw"], ["youtube", "https://www.youtube.com/@ZinemaMusicOfficial"], ["instagram", "https://www.instagram.com/zinema.music"]] as [Brand, string][]).map(([b, href]) => (
+                <a key={b} href={href} target="_blank" rel="noreferrer" className="tile tile-hover flex h-11 w-11 items-center justify-center !rounded-2xl" aria-label={`Zinema Music on ${b}`}>
+                  <BrandIcon name={b} size={20} />
+                </a>
+              ))}
+            </div>
+          </div>
+          <nav className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4" aria-label="Footer">
+            {FOOT.map((col) => (
+              <div key={col.title}>
+                <p className="eyebrow">{col.title}</p>
+                <ul className="mt-4 space-y-3 text-sm">
+                  {col.links.map(([label, href, ext]) => (
+                    <li key={label}>
+                      {href.startsWith("/") ? (
+                        <Link href={href} className="text-zinc-700 hover:text-brand-700">{label}</Link>
+                      ) : (
+                        <a href={href} {...(ext ? { target: "_blank", rel: "noreferrer" } : {})} className="break-words text-zinc-700 hover:text-brand-700">{label}{ext ? " ↗" : ""}</a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
         </div>
-        <div className="flex flex-wrap items-center gap-5 text-sm">
-          <Link href="/login" className="text-zinc-600 hover:text-black">Sign in</Link>
-          <a href="mailto:info@zinema.music" className="btn-ghost">info@zinema.music</a>
+        <div className="well mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 !rounded-2xl px-5 py-4 text-xs text-muted md:mx-6 md:mb-6">
+          <p>© 2026 Zinema Music. All rights reserved.</p>
+          <p className="flex items-center gap-2"><span className="inline-block h-2 w-2 bg-brand-500" />It Just Hits</p>
         </div>
       </div>
     </footer>

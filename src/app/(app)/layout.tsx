@@ -7,11 +7,11 @@ import { pageShort } from "@/components/ui";
 import { getSession } from "@/lib/session";
 import { TZ, roleLabel, shortName } from "@/lib/types";
 
-function Logo({ width = 116 }: { width?: number }) {
+function Logo({ width = 116, ink = false }: { width?: number; ink?: boolean }) {
   return (
     <Link href="/board" className="flex items-end gap-2" aria-label="Zinema OS home">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/zinema-wordmark.png" alt="Zinema Music" width={width} height={Math.round(width * 0.24)} />
+      <img src={ink ? "/brand/zinema-wordmark-ink.png" : "/brand/zinema-wordmark.png"} alt="Zinema Music" width={width} height={Math.round(width * 0.24)} />
       <span className="text-xl font-black leading-none tracking-tight text-brand-500">OS</span>
     </Link>
   );
@@ -42,12 +42,12 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar: phone gets the logo, everyone gets the account chip */}
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-[#0b0b0d] px-4 py-2.5 md:static md:bg-transparent md:px-10 md:pb-0 md:pt-7">
-          <div className="md:hidden"><Logo width={92} /></div>
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-background/85 px-4 py-2.5 backdrop-blur-md md:static md:bg-transparent md:px-10 md:pb-0 md:pt-7 md:backdrop-blur-none">
+          <div className="md:hidden"><Logo width={96} ink /></div>
           <Suspense fallback={<span />}>
             <Today />
           </Suspense>
-          <Suspense fallback={<span className="skel block h-11 w-11 !rounded-full max-md:opacity-20 md:w-40" />}>
+          <Suspense fallback={<span className="skel block h-11 w-11 !rounded-full md:w-40" />}>
             <Account />
           </Suspense>
         </header>
