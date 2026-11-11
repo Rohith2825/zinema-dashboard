@@ -32,9 +32,9 @@ export const VERSION_LABEL: Record<string, string> = {
 
 export function PageTitle({ title, sub, actions }: { title: string; sub?: React.ReactNode; actions?: React.ReactNode }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-4 md:mb-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
         {sub && <p className="mt-1.5 max-w-2xl text-sm text-muted">{sub}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -54,7 +54,7 @@ export function PageTabs({ pages, current, base, extra = {} }: { pages: Page[]; 
   const tab = (active: boolean) =>
     `rounded-full px-3.5 py-1.5 text-sm transition ${active ? "bg-[#0d0d10] font-medium text-white shadow-[0_8px_18px_-10px_rgba(0,0,0,0.7)]" : "text-zinc-600 hover:text-black"}`;
   return (
-    <div className="well mb-6 inline-flex max-w-full flex-wrap gap-1 !rounded-full p-1.5">
+    <div className="well mb-6 flex max-w-full gap-1 overflow-x-auto !rounded-full p-1.5 [scrollbar-width:none] sm:inline-flex [&>a]:shrink-0">
       <Link href={href()} className={tab(!current)}>All pages</Link>
       {pages.map((p) => (
         <Link key={p.id} href={href(p.slug)} className={tab(current === p.slug)}>
@@ -94,8 +94,8 @@ export function PageDot({ prefix, className = "" }: { prefix?: string | null; cl
 
 const AVATAR_BG = ["#fc7c0f", "#18181b", "#b85400", "#3f3f46", "#e06800", "#52525b"];
 
-/** Initials avatar; colour is stable per person. */
-export function Avatar({ name, email, size = 40, ring = true }: { name?: string | null; email?: string | null; size?: number; ring?: boolean }) {
+/** Google photo when we have one, otherwise initials on a colour that's stable per person. */
+export function Avatar({ name, email, size = 40, ring = true, src }: { name?: string | null; email?: string | null; size?: number; ring?: boolean; src?: string | null }) {
   const label = (name || email || "?").trim();
   const parts = label.split(/[\s@._-]+/).filter(Boolean);
   const initials = ((parts[0]?.[0] ?? "?") + (parts.length > 1 ? parts[1][0] : "")).toUpperCase();
@@ -105,14 +105,15 @@ export function Avatar({ name, email, size = 40, ring = true }: { name?: string 
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${ring ? "shadow-raise-sm" : ""}`}
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold ${ring ? "shadow-raise-sm" : ""}`}
       style={{ width: size, height: size, background: bg, fontSize: size * 0.38, color: bg === "#fc7c0f" || bg === "#e06800" ? "#000" : "#fff" }}
     >
       {initials}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {src && <img src={src} alt="" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />}
     </span>
   );
 }
-
 /** "Zinema Original" (orange) or "Community" (neutral) tag. */
 export function OwnershipTag({ ownership, short = false }: { ownership?: string | null; short?: boolean }) {
   const original = ownership !== "community";

@@ -35,6 +35,7 @@ export const getSession = cache(async () => {
     isAdmin,
     isOwner: ownerRes.data === true,
     unread: unreadRes.count ?? 0,
+    photo: ((user.user_metadata?.avatar_url ?? user.user_metadata?.picture) as string | undefined) || null,
     hasAccess: isAdmin || memberships.length > 0,
     roleOn,
     canWork: (pageId: string) => roleOn(pageId, ["page_admin", "approver", "checker", "maker"]),

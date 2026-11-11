@@ -126,10 +126,10 @@ async function Calendar({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
       </div>
 
       {/* Agenda (phones) */}
-      <div className="space-y-2 md:hidden">
+      <div className="space-y-3 md:hidden">
         {[...byDay.entries()].filter(([k]) => k.startsWith(monthStr)).map(([k, list]) => (
-          <div key={k} className="card p-3">
-            <p className="mb-1 text-xs font-medium text-muted">{k}</p>
+          <div key={k} className="card p-4">
+            <p className="mb-2 text-xs font-semibold text-zinc-700">{new Intl.DateTimeFormat("en-IN", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).format(new Date(`${k}T00:00:00Z`))}</p>
             <div className="space-y-1">{list.map((e, i) => <Chip key={i} e={e} code={codeOf(e.song_id)} />)}</div>
           </div>
         ))}

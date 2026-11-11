@@ -59,10 +59,10 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
     <>
       <PageTitle title="Attendance" sub="Mark your day from the office: your location is checked, and a time-stamped selfie is saved as proof." />
 
-      <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-8">
           {/* My day */}
-          <section className="card p-7">
+          <section className="card p-5 md:p-7">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="eyebrow">Today · {fmtDate(new Date().toISOString(), { weekday: "long", day: "numeric", month: "long" })}</p>
@@ -102,7 +102,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
 
           {/* Owners: the day's register */}
           {s.isOwner && (
-            <section className="card p-7">
+            <section className="card p-5 md:p-7">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="eyebrow">Register <Badge tone="violet">owners only</Badge></p>
@@ -110,7 +110,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
                     {new Set(dayRows.filter((r) => r.kind === "check_in").map((r) => r.user_id)).size} of {expected.length} present · {fmtDate(`${day}T12:00:00+05:30`, { weekday: "short", day: "numeric", month: "short" })}
                   </h2>
                 </div>
-                <form action="/attendance" className="flex gap-2">
+                <form action="/attendance" className="flex w-full gap-2 sm:w-auto">
                   <input type="date" name="day" defaultValue={day} max={today} className="input w-44" aria-label="Day" />
                   <button className="btn-ghost">Show</button>
                 </form>
@@ -121,9 +121,9 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
                   const cin = dayRows.find((r) => r.user_id === p.id && r.kind === "check_in");
                   const cout = dayRows.find((r) => r.user_id === p.id && r.kind === "check_out");
                   return (
-                    <li key={p.id} className="flex flex-wrap items-center gap-4 py-3">
+                    <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
                       <Avatar name={p.full_name} email={p.email} size={38} />
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 basis-[calc(100%-4rem)] sm:basis-40">
                         <p className="truncate text-sm font-medium">{shortName(p)}</p>
                         <p className="truncate text-xs text-muted">
                           {cin ? <>{cin.office?.name} · {cin.distance_m} m · <a className="underline" href={mapLink(cin)} target="_blank" rel="noreferrer">map</a></> : "No check-in"}
@@ -153,7 +153,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
 
           {/* My history */}
           {iAmRequired && (
-            <section className="card p-7">
+            <section className="card p-5 md:p-7">
               <p className="eyebrow">My last 30 days</p>
               <ul className="mt-4 divide-y divide-black/[0.06] text-sm">
                 {[...new Set(mine.map((r) => r.day))].map((d) => {
@@ -175,7 +175,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
 
         {/* Owner controls */}
         <div className="space-y-8">
-          <section className="card p-6">
+          <section className="card p-5 md:p-6">
             <p className="eyebrow">Offices</p>
             <ul className="mt-4 space-y-3">
               {offices.map((o) => (
@@ -217,7 +217,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
           </section>
 
           {s.isOwner && (
-            <section className="card p-6">
+            <section className="card p-5 md:p-6">
               <p className="eyebrow">Who must mark attendance</p>
               <ul className="mt-4 space-y-2">
                 {people.map((p) => {

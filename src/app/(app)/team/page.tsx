@@ -59,7 +59,7 @@ async function Team({ searchParams }: Pick<PageProps<"/team">, "searchParams">) 
         }
       />
 
-      <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
         {/* Roster */}
         <ul className="grid gap-6 sm:grid-cols-2">
           {people.map((p) => {

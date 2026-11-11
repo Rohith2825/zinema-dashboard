@@ -80,11 +80,11 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
               <Submit className="btn-ghost">Sync from Spotify</Submit>
             </ActionForm>
           )}
-          <form action="/catalog" className="flex gap-2">
+          <form action="/catalog" className="flex w-full gap-2 sm:w-auto">
             {page && <input type="hidden" name="page" value={page.slug} />}
             {view !== "all" && <input type="hidden" name="view" value={view} />}
             {own && <input type="hidden" name="own" value={own} />}
-            <input name="q" defaultValue={q} placeholder="Search title, code, artist…" className="input w-60" aria-label="Search the catalog" />
+            <input name="q" defaultValue={q} placeholder="Search title, code, artist…" className="input sm:w-60" aria-label="Search the catalog" />
           </form>
           </>
         }
@@ -100,7 +100,7 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
             {v.label}
           </Link>
         ))}
-        <span className="ml-auto flex items-center gap-1 pb-1.5">
+        <span className="flex items-center gap-1 pb-1.5 sm:ml-auto">
           {([[undefined, "All"], ["original", "Zinema Originals"], ["community", "Community"]] as const).map(([o, label]) => (
             <Link
               key={label}
@@ -117,7 +117,7 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
       {songs.length === 0 ? (
         <Empty>No songs match{q ? ` “${q}”` : ""}.</Empty>
       ) : (
-        <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4 2xl:grid-cols-5">
           {songs.map((song) => <SongCard key={song.id} song={song} />)}
         </ul>
       )}
@@ -152,11 +152,11 @@ function SongCard({ song }: { song: Row }) {
           <div className="flex items-center gap-1.5 text-[11px] text-muted">
             <PageDot prefix={song.page?.code_prefix} className="rounded-2xl" />
             <span className="truncate">{pageShort(song.page?.name)}{song.metadata?.language && song.metadata.language !== pageShort(song.page?.name) ? ` · ${song.metadata.language}` : ""}</span>
-            <span className="ml-auto font-mono">{song.code}</span>
+            <span className="ml-auto shrink-0 font-mono">{song.code}</span>
           </div>
           <div className="hairline flex items-center justify-between gap-2 border-t pt-2">
             <span className="flex gap-1" aria-label={`Formats: ${kinds.map((k) => KIND_LABEL[k]).join(", ") || "none yet"}`}>
-              {kinds.slice(0, 6).map((k) => {
+              {kinds.slice(0, 4).map((k) => {
                 const st = formats.filter((f) => f.kind === k);
                 const on = st.some((f) => f.status === "live");
                 return (
@@ -171,12 +171,12 @@ function SongCard({ song }: { song: Row }) {
               })}
               {kinds.length === 0 && <span className="text-[11px] text-zinc-400">No formats yet</span>}
             </span>
-            <span className="shrink-0 text-[11px] text-muted">{live}/{formats.length} live{posts ? ` · ${posts} posts` : ""}</span>
+            <span className="shrink-0 text-[11px] text-muted">{live}/{formats.length} live<span className="hidden sm:inline">{posts ? ` · ${posts} posts` : ""}</span></span>
           </div>
           {(releaseDate || dist?.isrc) && (
             <p className="flex justify-between text-[11px] text-zinc-400">
               <span>{releaseDate ? fmtDate(releaseDate) : "No release date"}</span>
-              {dist?.isrc && <span className="font-mono">{dist.isrc}</span>}
+              {dist?.isrc && <span className="hidden font-mono sm:inline">{dist.isrc}</span>}
             </p>
           )}
         </div>

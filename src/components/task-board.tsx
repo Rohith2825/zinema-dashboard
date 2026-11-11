@@ -34,8 +34,8 @@ export function TaskBoard({ tasks }: { tasks: TaskCard[] }) {
   };
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
-      <div className="grid min-w-[880px] grid-cols-4 gap-3">
+    <div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {TASK_COLUMNS.map((col) => {
           const items = optimistic.filter((t) => t.status === col.key);
           return (
@@ -43,7 +43,7 @@ export function TaskBoard({ tasks }: { tasks: TaskCard[] }) {
               key={col.key}
               onDragOver={(e) => e.preventDefault()}
               onDrop={drop(col.key)}
-              className="well min-h-64 p-3"
+              className="well min-h-28 p-3 md:min-h-64"
             >
               <header className="mb-2 flex justify-between px-1 text-sm">
                 <h2 className="font-semibold text-zinc-700">{col.label}</h2>

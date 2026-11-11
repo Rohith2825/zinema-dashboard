@@ -24,7 +24,7 @@ const SECTIONS = [
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="card p-7 md:p-9">
+    <section id={id} className="card p-5 md:p-9">
       <h2 className="text-2xl font-semibold">{title}</h2>
       <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-zinc-700">{children}</div>
     </section>
@@ -33,7 +33,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 const Step = ({ n, children }: { n: number; children: React.ReactNode }) => (
   <li className="flex gap-4">
     <span className="tile flex h-8 w-8 shrink-0 items-center justify-center !rounded-full text-xs font-semibold">{n}</span>
-    <span className="pt-1">{children}</span>
+    <span className="min-w-0 pt-1 [overflow-wrap:anywhere]">{children}</span>
   </li>
 );
 const Code = ({ children }: { children: React.ReactNode }) => <code className="rounded-md bg-black/[0.06] px-1.5 py-0.5 font-mono text-[12px]">{children}</code>;
@@ -46,10 +46,10 @@ export default function Guide() {
       <PublicHeader />
       <div className="mx-auto mt-14 w-[min(1120px,calc(100%-2rem))]">
         <p className="eyebrow">Guidebook</p>
-        <h1 className="mt-3 text-4xl font-semibold md:text-6xl">How Zinema OS works</h1>
+        <h1 className="mt-3 text-3xl font-semibold md:text-6xl">How Zinema OS works</h1>
         <p className="mt-4 max-w-2xl text-muted">Ten minutes, start to finish. If anything here doesn&apos;t match what you see, write to <Mail />.</p>
 
-        <div className="mt-12 grid items-start gap-10 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="mt-12 grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[220px_minmax(0,1fr)]">
           <nav className="well hidden p-3 text-sm lg:sticky lg:top-24 lg:block" aria-label="Guide sections">
             {SECTIONS.map(([id, label]) => (
               <a key={id} href={`#${id}`} className="block rounded-xl px-3 py-2 text-zinc-600 hover:bg-surface hover:text-black">{label}</a>
@@ -118,7 +118,7 @@ export default function Guide() {
               <p>Zinema OS is an MCP server, so your assistant can work the pipeline with you. We support <b>Claude</b> and <b>ChatGPT</b>. Server address:</p>
               <p className="well overflow-x-auto p-4 font-mono text-sm">{mcp}</p>
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="tile p-5">
+                <div className="tile min-w-0 p-5">
                   <p className="font-semibold text-foreground">Claude</p>
                   <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
                     <li>Open Claude (web, desktop or phone) → <b>Settings → Connectors</b>.</li>
@@ -127,7 +127,7 @@ export default function Guide() {
                     <li>In a chat, switch the Zinema OS connector on.</li>
                   </ol>
                 </div>
-                <div className="tile p-5">
+                <div className="tile min-w-0 p-5">
                   <p className="font-semibold text-foreground">ChatGPT</p>
                   <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
                     <li>Open ChatGPT → <b>Settings → Apps &amp; Connectors</b>.</li>

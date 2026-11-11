@@ -57,9 +57,9 @@ async function Board({ searchParams }: Pick<PageProps<"/board">, "searchParams">
       <PageTabs pages={s.pages} current={page?.slug} base="/board" />
       {error && <p className="mb-3 text-sm text-red-600">{error.message}</p>}
       {/* All eight stages on one screen: compact rows, each column scrolls on its own, ⤢ opens the full stage. */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 2xl:grid-cols-8">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 2xl:grid-cols-8">
         {columns.map((col) => (
-          <section key={col.key} className="well flex h-[calc((100vh-19rem)/2)] min-h-56 flex-col p-2.5 2xl:h-[calc(100vh-17rem)]">
+          <section key={col.key} className="well flex max-h-72 min-h-24 flex-col p-2.5 md:h-[calc((100vh-21rem)/2)] md:max-h-none md:min-h-56 2xl:h-[calc(100vh-19rem)]">
             <header className="flex items-center justify-between px-1.5 pb-2 pt-1">
               <h2 className="eyebrow truncate !text-zinc-700">{col.label}</h2>
               <span className="flex items-center gap-1">

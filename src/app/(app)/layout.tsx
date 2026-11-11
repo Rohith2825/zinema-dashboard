@@ -1,47 +1,69 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Nav, NavLinks } from "@/components/nav";
+import { MobileTabs, Nav, NavLinks } from "@/components/nav";
 import { NavProgress } from "@/components/nav-progress";
-import { SidebarUserSkeleton } from "@/components/skeletons";
-import { Avatar } from "@/components/ui";
+import { UserMenu } from "@/components/user-menu";
+import { pageShort } from "@/components/ui";
 import { getSession } from "@/lib/session";
-import { shortName } from "@/lib/types";
+import { ROLES, TZ, shortName } from "@/lib/types";
+
+function Logo({ width = 116 }: { width?: number }) {
+  return (
+    <Link href="/board" className="flex items-end gap-2" aria-label="Zinema OS home">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/zinema-wordmark.png" alt="Zinema Music" width={width} height={Math.round(width * 0.24)} />
+      <span className="text-xl font-black leading-none tracking-tight text-brand-500">OS</span>
+    </Link>
+  );
+}
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="flex min-h-full flex-1 flex-col md:flex-row">
+    <div className="flex min-h-full flex-1">
       <Suspense fallback={null}>
         <NavProgress />
       </Suspense>
 
-      {/* Floating dark rail */}
-      <aside className="z-10 bg-[#0b0b0d] text-neutral-200 md:sticky md:top-4 md:m-4 md:mr-0 md:flex md:h-[calc(100vh-2rem)] md:w-60 md:shrink-0 md:flex-col md:rounded-[28px] md:shadow-[0_24px_60px_-20px_rgba(0,0,0,0.55)]">
-        <div className="px-5 pb-2 pt-4 md:pb-6 md:pt-7">
-          <Link href="/board" className="flex items-end gap-2" aria-label="Zinema OS home">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/zinema-wordmark.png" alt="Zinema Music" width={116} height={28} />
-            <span className="text-xl font-black leading-none tracking-tight text-brand-500">OS</span>
-          </Link>
-        </div>
-        <div className="overflow-x-auto px-3 pb-3 md:flex-1 md:overflow-y-auto md:pb-0">
+      {/* Desktop: floating dark rail */}
+      <aside className="sticky top-4 z-10 m-4 mr-0 hidden h-[calc(100vh-2rem)] w-60 shrink-0 flex-col rounded-[28px] bg-[#0b0b0d] text-neutral-200 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.55)] md:flex">
+        <div className="px-5 pb-6 pt-7"><Logo /></div>
+        <div className="flex-1 overflow-y-auto px-3">
           <Suspense fallback={<NavLinks path="" />}>
             <NavWithCount />
           </Suspense>
         </div>
-        <div className="hidden p-3 md:block">
-          <Suspense fallback={<div className="rounded-2xl bg-white/[0.05] p-3"><SidebarUserSkeleton /></div>}>
-            <UserBox />
-          </Suspense>
+        <div className="p-3">
+          <a href="mailto:info@zinema.music" className="block rounded-2xl bg-white/[0.05] p-3.5 text-xs text-neutral-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] hover:bg-white/[0.08]">
+            <span className="block font-medium text-neutral-100">Need a hand?</span>
+            info@zinema.music
+          </a>
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-10 md:py-10">
-        <div className="mx-auto max-w-[1500px]">{children}</div>
-        {/* Each page shows its own skeleton; the access check overlays the page instead of blocking it. */}
-        <Suspense fallback={null}>
-          <AccessGate />
-        </Suspense>
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top bar: phone gets the logo, everyone gets the account chip */}
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 bg-[#0b0b0d] px-4 py-2.5 md:static md:bg-transparent md:px-10 md:pb-0 md:pt-7">
+          <div className="md:hidden"><Logo width={92} /></div>
+          <Suspense fallback={<span />}>
+            <Today />
+          </Suspense>
+          <Suspense fallback={<span className="skel skel-dark block h-10 w-10 !rounded-full md:w-40" />}>
+            <Account />
+          </Suspense>
+        </header>
+
+        <main className="min-w-0 flex-1 px-4 pb-28 pt-6 md:px-10 md:pb-10 md:pt-6">
+          <div className="mx-auto max-w-[1500px]">{children}</div>
+          {/* Each page shows its own skeleton; the access check overlays the page instead of blocking it. */}
+          <Suspense fallback={null}>
+            <AccessGate />
+          </Suspense>
+        </main>
+      </div>
+
+      <Suspense fallback={null}>
+        <Tabs />
+      </Suspense>
     </div>
   );
 }
@@ -50,26 +72,45 @@ async function NavWithCount() {
   const s = await getSession();
   return <Nav unread={s.unread} />;
 }
-
-async function UserBox() {
+async function Tabs() {
   const s = await getSession();
+  return <MobileTabs unread={s.unread} />;
+}
+
+async function Today() {
+  const s = await getSession();
+  const name = shortName(s.profile);
+  const first = name === "—" ? (s.user.email ?? "there").split("@")[0] : name.split(" ")[0];
+  const date = new Intl.DateTimeFormat("en-IN", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" }).format(new Date());
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white/[0.05] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-      <Avatar name={s.profile?.full_name} email={s.profile?.email ?? s.user.email} size={34} ring={false} />
-      <div className="min-w-0 flex-1 text-xs">
-        <p className="truncate font-medium text-neutral-100">{shortName(s.profile)}</p>
-        <p className="truncate text-neutral-500">
-          {s.isAdmin ? "Admin" : "Member"}
-          {s.isOwner ? " · Owner" : ""}
-        </p>
-      </div>
-      <form action="/auth/signout" method="post">
-        <button className="rounded-lg p-1.5 text-neutral-500 hover:bg-white/10 hover:text-white" aria-label="Sign out" title="Sign out">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h9" />
-          </svg>
-        </button>
-      </form>
+    <p className="hidden text-sm text-muted md:block">
+      <span className="font-medium text-foreground">Hi {first}</span> · {date}
+    </p>
+  );
+}
+
+async function Account() {
+  const s = await getSession();
+  const roleLabel = (r: string) => ROLES.find((x) => x.key === r)?.label ?? r;
+  return (
+    <div className="flex items-center gap-2.5">
+      <Link href="/inbox" className="tile relative flex h-11 w-11 items-center justify-center !rounded-full text-zinc-700" aria-label={`Inbox${s.unread ? `, ${s.unread} unread` : ""}`}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6zM10 19a2 2 0 004 0" />
+        </svg>
+        {s.unread > 0 && <span className="absolute right-0 top-0 min-w-4 rounded-full bg-brand-500 px-1 text-center text-[10px] font-bold text-black">{s.unread}</span>}
+      </Link>
+      <UserMenu
+        me={{
+          name: shortName(s.profile) === "—" ? (s.user.email ?? "You") : shortName(s.profile),
+          email: s.profile?.email ?? s.user.email ?? "",
+          photo: s.photo,
+          role: s.isOwner ? "Owner" : s.isAdmin ? "Admin" : s.memberships.length ? "Member" : "No access yet",
+          pages: s.isAdmin
+            ? [{ name: "All pages", role: "Admin" }]
+            : s.memberships.map((m) => ({ name: pageShort(s.pages.find((p) => p.id === m.page_id)?.name), role: roleLabel(m.role) })),
+        }}
+      />
     </div>
   );
 }
@@ -78,8 +119,8 @@ async function AccessGate() {
   const s = await getSession();
   if (s.hasAccess) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-background/90 px-4 backdrop-blur-md md:left-64">
-      <div className="card mx-auto mt-28 max-w-md p-8 text-center">
+    <div className="fixed inset-0 top-14 z-10 flex items-start justify-center bg-background/90 px-4 backdrop-blur-md md:left-64 md:top-20">
+      <div className="card mx-auto mt-16 max-w-md p-8 text-center">
         <span className="eq-loader mx-auto mb-4" aria-hidden="true"><i /><i /><i /><i /></span>
         <h2 className="text-lg font-semibold">You&apos;re in — almost</h2>
         <p className="mt-2 text-sm text-muted">

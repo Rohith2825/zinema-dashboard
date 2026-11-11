@@ -15,7 +15,7 @@ export function PublicHeader() {
         <Link href="/#access" className="hover:text-white">Access</Link>
         <Link href="/guide" className="hover:text-white">Guide</Link>
       </nav>
-      <Link href="/board" className="btn !rounded-full !py-1.5">Open Zinema OS</Link>
+      <Link href="/board" className="btn !rounded-full !px-3.5 !py-1.5 text-xs sm:text-sm">Open <span className="hidden sm:inline">Zinema OS</span><span className="sm:hidden">app</span></Link>
     </header>
   );
 }
@@ -23,7 +23,7 @@ export function PublicHeader() {
 export function PublicFooter() {
   return (
     <footer className="mx-auto mt-28 w-[min(1120px,calc(100%-2rem))] pb-12">
-      <div className="card flex flex-wrap items-center justify-between gap-6 px-8 py-7">
+      <div className="card flex flex-wrap items-center justify-between gap-6 px-6 py-7 md:px-8">
         <div>
           <p className="text-sm font-semibold">Zinema Music · It Just Hits</p>
           <p className="mt-1 text-xs text-muted">Zinema OS is the private workspace of the Zinema Music team.</p>

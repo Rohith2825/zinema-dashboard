@@ -105,10 +105,10 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
         <Link href={`/board${page ? `?page=${page.slug}` : ""}`} className="text-sm text-muted hover:text-zinc-800">← Board</Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
-          <Cover src={coverSrc(song, 400)} code={song.code} title={song.title} prefix={page?.code_prefix} className="w-24 shrink-0 rounded-2xl shadow-raise sm:w-32" />
+          <Cover src={coverSrc(song, 400)} code={song.code} title={song.title} prefix={page?.code_prefix} className="w-20 shrink-0 rounded-2xl shadow-raise sm:w-32" />
           <div>
             <p className="font-mono text-xs text-muted">{song.code}</p>
-            <h1 className="text-3xl font-semibold tracking-tight">{song.title}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{song.title}</h1>
             <p className={`text-sm ${song.artists ? "text-zinc-600" : "italic text-zinc-400"}`}>{song.artists || "Artists not added yet"}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <OwnershipTag ownership={song.ownership} />
@@ -149,7 +149,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
         </ol>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Deliverables by stage */}
         <div className="space-y-6">
           {meta.imported && deliverables.length === 0 ? (
@@ -159,7 +159,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
               const items = deliverables.filter((d) => d.stage === st.key);
               return (
                 <details key={st.key} open={st.key === song.current_stage} className="card">
-                  <summary className="flex cursor-pointer items-center justify-between px-6 py-4">
+                  <summary className="flex cursor-pointer items-center justify-between px-4 py-4 md:px-6">
                     <span className="font-medium">{st.label}</span>
                     <span className="text-xs text-muted">
                       {items.filter((d) => d.deliverable_versions.some((v) => v.status === "approved")).length}/{items.length} approved
@@ -181,7 +181,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           />
 
           {/* Comments */}
-          <section className="card p-6">
+          <section className="card p-5 md:p-6">
             <h2 className="eyebrow mb-4">Discussion</h2>
             <ul className="mb-3 space-y-3">
               {(commentsR.data ?? []).map((c) => (
@@ -203,7 +203,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
 
         {/* Side panel */}
         <div className="space-y-6">
-          <section className="card p-6">
+          <section className="card p-5 md:p-6">
             <h2 className="eyebrow mb-4">Details</h2>
             <ActionForm action={updateSong} className="space-y-3">
               <input type="hidden" name="song_id" value={song.id} />
@@ -254,7 +254,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           </section>
 
           {/* Distribution */}
-          <section className="card p-6">
+          <section className="card p-5 md:p-6">
             <h2 className="eyebrow mb-4">Distribution</h2>
             {(distR.data ?? []).map((r) => (
               <dl key={r.id} className="mb-3 grid grid-cols-[90px_1fr] gap-y-1 text-sm">
@@ -290,7 +290,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           </section>
 
           {/* Credits */}
-          <section className="card p-6">
+          <section className="card p-5 md:p-6">
             <h2 className="eyebrow mb-4">Credits</h2>
             <ul className="mb-3 space-y-1 text-sm">
               {(creditsR.data ?? []).map((c) => (
@@ -347,7 +347,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           )}
 
           {/* Content plan */}
-          <section className="card p-6">
+          <section className="card p-5 md:p-6">
             <h2 className="eyebrow mb-4">Content plan</h2>
             <ul className="mb-3 space-y-2 text-sm">
               {(slotsR.data ?? []).map((c) => (
@@ -394,7 +394,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           </section>
 
           {/* Tasks */}
-          <section className="card p-6">
+          <section className="card p-5 md:p-6">
             <h2 className="eyebrow mb-4">Tasks</h2>
             <ul className="mb-3 space-y-1 text-sm">
               {(tasksR.data ?? []).map((t) => (
@@ -423,7 +423,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
           </section>
 
           {/* Activity */}
-          <section className="card p-6">
+          <section className="card p-5 md:p-6">
             <h2 className="eyebrow mb-4">Activity</h2>
             <ul className="space-y-1.5 text-xs text-zinc-600">
               {(activityR.data ?? []).map((a) => (
@@ -467,7 +467,7 @@ function DeliverableRow({
   const mine = latest?.submitted_by === s.user.id;
 
   return (
-    <li className="px-6 py-4">
+    <li className="px-4 py-4 md:px-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{KIND_LABEL[d.kind]}{multi ? ` ${d.slot}` : ""}</span>
@@ -563,7 +563,7 @@ function FormatsSection({
   const live = active.filter((f) => f.status === "live").length;
   return (
     <section className="card">
-      <header className="flex flex-wrap items-center justify-between gap-2 px-6 py-5">
+      <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-5 md:px-6">
         <div>
           <h2 className="text-lg font-semibold">Formats</h2>
           <p className="text-xs text-muted">Every version of this song: verticals, carousels, videos, audio — before and after release.</p>
@@ -578,7 +578,7 @@ function FormatsSection({
           return (
             <li key={f.id}>
               <details>
-                <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 px-6 py-3.5">
+                <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 px-4 py-3.5 md:px-6">
                   <span className={`flex flex-wrap items-center gap-2 ${f.status === "dropped" ? "text-zinc-400 line-through" : ""}`}>
                     <span className="text-sm font-medium">{f.label}</span>
                     {f.label !== KIND_LABEL[f.kind] && !f.label.startsWith(KIND_LABEL[f.kind]) && <Badge>{KIND_LABEL[f.kind]}</Badge>}
@@ -592,7 +592,7 @@ function FormatsSection({
                     {f.went_live_at ? <>live {fmtDate(f.went_live_at, { day: "numeric", month: "short" })}</> : f.planned_at ? <>planned {fmtDate(f.planned_at, { day: "numeric", month: "short" })}</> : "no date"}
                   </span>
                 </summary>
-                <div className="space-y-5 border-t border-black/[0.06] bg-black/[0.02] px-5 py-4">
+                <div className="space-y-5 border-t border-black/[0.06] bg-black/[0.02] px-4 py-4 md:px-5">
                   {(f.live_url || f.drive_folder_url) && (
                     <p className="flex flex-wrap gap-3 text-xs">
                       {f.live_url && <a href={f.live_url} target="_blank" rel="noreferrer" className="text-brand-700 underline">Live post ↗</a>}
@@ -706,7 +706,7 @@ function FormatsSection({
         {formats.length === 0 && <li className="px-4 py-3 text-sm text-muted">No formats yet.</li>}
       </ul>
       {canWork && (
-        <ActionForm action={addFormat} resetOnSuccess className="flex flex-wrap gap-2 border-t border-black/[0.06] px-5 py-4">
+        <ActionForm action={addFormat} resetOnSuccess className="flex flex-wrap gap-2 border-t border-black/[0.06] px-4 py-4 md:px-5">
           <input type="hidden" name="song_id" value={songId} />
           <select name="kind" className="input w-56" defaultValue="lyric_video" required>
             {types.map((t) => <option key={t.kind} value={t.kind}>{t.label}</option>)}
