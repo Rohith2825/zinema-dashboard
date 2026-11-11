@@ -47,7 +47,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <Suspense fallback={<span />}>
             <Today />
           </Suspense>
-          <Suspense fallback={<span className="skel skel-dark block h-10 w-10 !rounded-full md:w-40" />}>
+          <Suspense fallback={<span className="skel block h-11 w-11 !rounded-full max-md:opacity-20 md:w-40" />}>
             <Account />
           </Suspense>
         </header>
@@ -128,7 +128,6 @@ async function AccessGate() {
           <a href="mailto:info@zinema.music" className="font-medium text-brand-700 underline">info@zinema.music</a>.
         </p>
         <div className="mt-6 flex justify-center gap-2">
-          <Link href="/guide" className="btn-ghost">Read the guide</Link>
           <form action="/auth/signout" method="post">
             <button className="btn-dark">Sign out</button>
           </form>

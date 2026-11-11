@@ -1,4 +1,4 @@
-/** Skeleton loaders in the Zinema brand: grey blocks with an orange-tinted shimmer and a tiny equalizer. */
+/** Skeleton loaders that match the neumorphic UI: pressed-in shapes with a soft light sweep, plus a tiny equalizer. */
 
 type Cls = { className?: string };
 
@@ -32,7 +32,7 @@ function TitleSkel({ label, actions = 0 }: { label: string; actions?: number }) 
 function TabsSkel() {
   return (
     <div className="mb-4 flex gap-2">
-      {[80, 64, 64, 80, 72, 60].map((w, i) => <SkelW key={i} w={w} className="h-7 rounded-full" />)}
+      {[80, 64, 64, 80, 72, 60].map((w, i) => <SkelW key={i} w={w} className="h-7 !rounded-full" />)}
     </div>
   );
 }
@@ -43,34 +43,29 @@ function SkelW({ w, className = "" }: { w: number | string; className?: string }
 }
 
 export function BoardSkeleton() {
-  const cards = [3, 2, 4, 1, 2, 3, 1, 2];
+  const cards = [1, 1, 2, 1, 1, 1, 2, 3];
   return (
     <>
       <TitleSkel label="Loading board" actions={1} />
       <TabsSkel />
-      <div className="-mx-4 overflow-hidden px-4 md:-mx-8 md:px-8">
-        <div className="flex gap-3">
-          {cards.map((n, c) => (
-            <section key={c} className="w-64 shrink-0 rounded-xl bg-zinc-100/70 p-2">
-              <div className="mb-3 flex items-center justify-between px-1 pt-1">
-                <SkelW w={72} className="h-3.5" />
-                <SkelW w={14} className="h-3.5" />
-              </div>
-              <div className="space-y-2">
-                {Array.from({ length: n }, (_, i) => (
-                  <div key={i} className="rounded-lg border border-zinc-200 bg-white p-3">
-                    <SkelW w={64} className="h-2.5" />
-                    <SkelW w={`${60 + ((c + i) * 13) % 35}%`} className="mt-2 h-4" />
-                    <div className="mt-3 flex gap-1">
-                      <SkelW w={58} className="h-4" />
-                      <SkelW w={40} className="h-4" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 2xl:grid-cols-8">
+        {cards.map((n, c) => (
+          <section key={c} className="well min-h-24 p-2.5 md:h-[calc((100vh-21rem)/2)] md:min-h-56 2xl:h-[calc(100vh-19rem)]">
+            <div className="mb-3 flex items-center justify-between px-1.5 pt-1">
+              <SkelW w={64} className="h-3" />
+              <SkelW w={18} className="h-3" />
+            </div>
+            <div className="space-y-2.5 px-1">
+              {Array.from({ length: n }, (_, i) => (
+                <div key={i} className="tile !rounded-xl px-2.5 py-2.5">
+                  <SkelW w={58} className="h-2.5" />
+                  <SkelW w={`${55 + ((c + i) * 13) % 35}%`} className="mt-2 h-3.5" />
+                  <SkelW w="100%" className="mt-2.5 h-1 !rounded-full" />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
     </>
   );
@@ -87,12 +82,12 @@ export function CalendarSkeleton() {
         <SkelW w={34} className="h-8" />
       </div>
       <div className="card overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-zinc-200 bg-zinc-50 px-2 py-2">
+        <div className="grid grid-cols-7 border-b border-black/[0.06] px-2 py-2">
           {Array.from({ length: 7 }, (_, i) => <SkelW key={i} w={28} className="h-3" />)}
         </div>
         <div className="grid grid-cols-7">
           {Array.from({ length: 35 }, (_, i) => (
-            <div key={i} className="min-h-24 border-b border-r border-zinc-100 p-1.5">
+            <div key={i} className="min-h-24 border-b border-r border-black/[0.05] p-1.5">
               <SkelW w={16} className="h-3" />
               {i % 5 === 1 && <SkelW w="85%" className="mt-2 h-4" />}
               {i % 9 === 3 && <SkelW w="70%" className="mt-1 h-4" />}
@@ -111,11 +106,11 @@ export function TasksSkeleton() {
       <TabsSkel />
       <div className="grid gap-3 md:grid-cols-4">
         {[3, 2, 1, 2].map((n, c) => (
-          <section key={c} className="rounded-xl bg-zinc-100/70 p-2">
+          <section key={c} className="well p-3">
             <SkelW w={60} className="mb-3 ml-1 mt-1 h-3.5" />
             <div className="space-y-2">
               {Array.from({ length: n }, (_, i) => (
-                <div key={i} className="rounded-lg border border-zinc-200 bg-white p-3">
+                <div key={i} className="tile p-3.5">
                   <SkelW w={`${55 + ((c + i) * 17) % 40}%`} className="h-4" />
                   <div className="mt-2 flex gap-2">
                     <SkelW w={56} className="h-3" />
@@ -135,10 +130,10 @@ export function ListSkeleton({ label = "Loading", rows = 6 }: { label?: string; 
   return (
     <>
       <TitleSkel label={label} actions={1} />
-      <div className="card divide-y divide-zinc-100">
+      <div className="card divide-y divide-black/[0.06]">
         {Array.from({ length: rows }, (_, i) => (
           <div key={i} className="flex items-center gap-3 px-4 py-3">
-            <SkelW w={36} className="h-9 shrink-0 rounded-full" />
+            <SkelW w={36} className="h-9 shrink-0 !rounded-full" />
             <div className="flex-1 space-y-1.5">
               <SkelW w={`${35 + (i * 19) % 40}%`} className="h-3.5" />
               <SkelW w={`${20 + (i * 11) % 25}%`} className="h-3" />
@@ -154,32 +149,26 @@ export function ListSkeleton({ label = "Loading", rows = 6 }: { label?: string; 
 export function TeamSkeleton() {
   return (
     <>
-      <TitleSkel label="Loading team" />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="grid gap-3 sm:grid-cols-2">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="card p-4">
-              <div className="flex items-center gap-3">
-                <SkelW w={44} className="h-11 shrink-0 rounded-full" />
-                <div className="flex-1 space-y-1.5">
-                  <SkelW w="55%" className="h-4" />
-                  <SkelW w="70%" className="h-3" />
+      <TitleSkel label="Loading team" actions={1} />
+      {[3, 3].map((n, g) => (
+        <div key={g} className="mb-8">
+          <div className="mb-3 flex items-center gap-3"><SkelW w={28} className="h-7" /><SkelW w={120} className="h-5" /></div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: n }, (_, i) => (
+              <div key={i} className="card p-5">
+                <div className="flex items-center gap-3">
+                  <SkelW w={44} className="h-11 shrink-0 !rounded-full" />
+                  <div className="flex-1 space-y-1.5">
+                    <SkelW w="55%" className="h-4" />
+                    <SkelW w="40%" className="h-3" />
+                  </div>
                 </div>
+                <div className="mt-5 flex justify-between"><SkelW w={84} className="h-6 !rounded-full" /><SkelW w={96} className="h-7" /></div>
               </div>
-              <div className="mt-4 flex gap-1.5">
-                <SkelW w={88} className="h-6 rounded-full" />
-                <SkelW w={72} className="h-6 rounded-full" />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-        <div className="card space-y-3 p-4">
-          <SkelW w={150} className="h-5" />
-          <SkelW w="100%" className="h-10" />
-          <div className="grid grid-cols-3 gap-2">{Array.from({ length: 6 }, (_, i) => <SkelW key={i} w="100%" className="h-14" />)}</div>
-          <div className="space-y-2">{Array.from({ length: 5 }, (_, i) => <SkelW key={i} w="100%" className="h-12" />)}</div>
-        </div>
-      </div>
+      ))}
     </>
   );
 }
@@ -195,7 +184,7 @@ export function SongSkeleton() {
           <div className="flex gap-1.5">{[56, 48, 64, 90].map((w, i) => <SkelW key={i} w={w} className="h-5" />)}</div>
         </div>
         <div className="mt-5 flex flex-wrap gap-1">
-          {[54, 52, 92, 86, 50, 54, 60, 40].map((w, i) => <SkelW key={i} w={w} className="h-6 rounded-full" />)}
+          {[54, 52, 92, 86, 50, 54, 60, 40].map((w, i) => <SkelW key={i} w={w} className="h-6 !rounded-full" />)}
         </div>
         <div className="mt-3"><EqLoader label="Loading song" /></div>
       </div>
@@ -256,13 +245,13 @@ export function CatalogSkeleton() {
     <>
       <TitleSkel label="Loading catalog" actions={1} />
       <TabsSkel />
-      <div className="mb-5 flex gap-3 border-b border-zinc-200 pb-2">
+      <div className="mb-5 flex gap-3 border-b border-black/[0.06] pb-2">
         {[30, 64, 72, 96].map((w, i) => <SkelW key={i} w={w} className="h-4" />)}
       </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
         {Array.from({ length: 10 }, (_, i) => (
-          <div key={i} className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-            <SkelW w="100%" className="aspect-square rounded-none" />
+          <div key={i} className="tile overflow-hidden !rounded-[22px] p-2">
+            <SkelW w="100%" className="aspect-square !rounded-2xl" />
             <div className="space-y-2 p-3">
               <SkelW w={`${50 + (i * 17) % 40}%`} className="h-4" />
               <SkelW w="40%" className="h-3" />

@@ -13,7 +13,7 @@ export type PickerPage = { id: string; name: string; prefix: string; members: nu
 type Level = "admin" | "core" | "viewer" | "none";
 
 /** "Set access": person → level → which pages (or all of them), with a plain-English summary. */
-export function RolePicker({ people, pages, defaultPerson, canMakeAdmins }: { people: PickerPerson[]; pages: PickerPage[]; defaultPerson?: string; canMakeAdmins: boolean }) {
+export function RolePicker({ people, pages, defaultPerson, canMakeAdmins, fixed = false }: { people: PickerPerson[]; pages: PickerPage[]; defaultPerson?: string; canMakeAdmins: boolean; fixed?: boolean }) {
   const [state, formAction, pending] = useActionState(setAccess, undefined);
   const [query, setQuery] = useState("");
   const start = people.find((p) => p.id === defaultPerson);
@@ -51,7 +51,7 @@ export function RolePicker({ people, pages, defaultPerson, canMakeAdmins }: { pe
 
       {/* 1 · Person */}
       <fieldset>
-        <legend className="label">1 · Who</legend>
+        <legend className="label">{fixed ? "Person" : "1 · Who"}</legend>
         {person ? (
           <div className="flex items-center gap-3 rounded-2xl bg-background p-3 shadow-inset ring-2 ring-brand-500/50">
             <Avatar name={person.name} email={person.email} size={36} />
@@ -59,7 +59,7 @@ export function RolePicker({ people, pages, defaultPerson, canMakeAdmins }: { pe
               <p className="truncate text-sm font-medium">{person.name}</p>
               <p className="truncate text-xs text-muted">{person.handle ? `@${person.handle} · ` : ""}{person.email}</p>
             </div>
-            <button type="button" onClick={() => setPersonId("")} className="text-xs font-medium text-brand-700 hover:underline">Change</button>
+            {!fixed && <button type="button" onClick={() => setPersonId("")} className="text-xs font-medium text-brand-700 hover:underline">Change</button>}
           </div>
         ) : (
           <div className="well overflow-hidden !rounded-2xl">
@@ -90,7 +90,7 @@ export function RolePicker({ people, pages, defaultPerson, canMakeAdmins }: { pe
 
       {/* 2 · Level */}
       <fieldset disabled={person?.level === "owner"}>
-        <legend className="label">2 · Access level</legend>
+        <legend className="label">{fixed ? "1" : "2"} · Access level</legend>
         <div className="space-y-2">
           {levels.map((r) => {
             const on = r.key === level;
@@ -121,7 +121,7 @@ export function RolePicker({ people, pages, defaultPerson, canMakeAdmins }: { pe
       {/* 3 · Pages */}
       {scoped && (
         <fieldset>
-          <legend className="label">3 · Which pages</legend>
+          <legend className="label">{fixed ? "2" : "3"} · Which pages</legend>
           <button type="button" aria-pressed={all} onClick={() => setAll((v) => !v)} className={`mb-2 flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-medium transition ${all ? "bg-[#0d0d10] text-white" : "tile"}`}>
             All pages
             <span className={`text-xs font-normal ${all ? "text-brand-400" : "text-muted"}`}>{all ? "✓ including new ones" : "every page, now and later"}</span>

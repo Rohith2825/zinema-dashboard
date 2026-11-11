@@ -2,7 +2,7 @@ import Link from "next/link";
 import { SITE_URL } from "@/lib/site";
 import { ROLES, STAGES } from "@/lib/types";
 
-/** The guidebook itself. Shown on the public /guide page and inside the dashboard at /help. */
+/** The guidebook itself. Shown inside the dashboard at /help. */
 const SECTIONS = [
   ["access", "Getting access"],
   ["roles", "Roles"],

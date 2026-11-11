@@ -133,19 +133,21 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .skel {
   position: relative;
   overflow: hidden;
-  border-radius: 6px;
-  background: #e9e9ec;
+  border-radius: 10px;
+  background: var(--background);
+  box-shadow: var(--inset-sm);
 }
+/* A soft band of light passing over the pressed-in shape */
 .skel::after {
   content: "";
   position: absolute;
   inset: 0;
   translate: -100% 0;
-  background: linear-gradient(90deg, transparent, rgba(252, 124, 15, 0.1) 35%, rgba(255, 255, 255, 0.75) 50%, rgba(252, 124, 15, 0.1) 65%, transparent);
-  animation: skel-shimmer 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85) 50%, transparent);
+  animation: skel-shimmer 1.6s ease-in-out infinite;
 }
-.skel-dark { background: #1c1c1c; }
-.skel-dark::after { background: linear-gradient(90deg, transparent, rgba(252, 124, 15, 0.18) 50%, transparent); }
+.skel-dark { background: #1c1c1c; box-shadow: none; }
+.skel-dark::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08) 50%, transparent); }
 @keyframes skel-shimmer { to { translate: 100% 0; } }
 
 /* Tiny equalizer used as the loading mark */

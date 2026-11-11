@@ -28,6 +28,10 @@ const BARS = Array.from({ length: 64 }, (_, i) => {
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <main className="zl">
+      <Link href="/" className="zl-back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+        Back to home
+      </Link>
       <div className="zl-glow" aria-hidden="true" />
       <div className="zl-rings" aria-hidden="true">
         {[0, 1, 2, 3].map((n) => <i key={n} style={{ "--n": n } as React.CSSProperties} />)}
@@ -45,7 +49,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           <LoginForm searchParams={searchParams} />
         </Suspense>
         <p className="zl-pages">{PAGES.map((p) => <span key={p}>{p}</span>)}</p>
-        <p className="zl-links"><Link href="/">About Zinema OS</Link><Link href="/guide">Guide</Link><a href="mailto:info@zinema.music">Help</a></p>
+        <p className="zl-links"><a href="mailto:info@zinema.music">Can&apos;t sign in? info@zinema.music</a></p>
       </div>
     </main>
   );

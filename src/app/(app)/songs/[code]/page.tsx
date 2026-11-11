@@ -9,6 +9,7 @@ import {
 } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
 import { Cover } from "@/components/cover";
+import { Tabs } from "@/components/tabs";
 import { DriveUpload } from "@/components/drive-upload";
 import { folderUrl } from "@/lib/site";
 import { coverSrc } from "@/lib/drive";
@@ -199,6 +200,176 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
               <Submit>Post</Submit>
             </ActionForm>
           </section>
+
+          {/* Everything else about the song, one tab each */}
+          <Tabs
+            label="Song details"
+            tabs={[
+              { key: "dist", label: "Distribution", count: (distR.data ?? []).length, node: <>
+            {(distR.data ?? []).map((r) => (
+              <dl key={r.id} className="mb-3 grid grid-cols-[90px_1fr] gap-y-1 text-sm">
+                <dt className="text-muted">Distributor</dt>
+                <dd>{r.distributor} {r.legacy && <Badge>legacy</Badge>}</dd>
+                <dt className="text-muted">ISRC</dt><dd className="font-mono">{r.isrc}</dd>
+                {r.upc && (<><dt className="text-muted">UPC</dt><dd className="font-mono">{r.upc}</dd></>)}
+                {r.catalog_number && (<><dt className="text-muted">Catalog no.</dt><dd className="font-mono">{r.catalog_number}</dd></>)}
+                <dt className="text-muted">Release</dt><dd>{fmtDate(r.release_date)}</dd>
+                {r.dsp_status && (<><dt className="text-muted">Status</dt><dd>{r.dsp_status}</dd></>)}
+              </dl>
+            ))}
+            {canWork && (
+              <details open={(distR.data ?? []).length === 0}>
+                <summary className="cursor-pointer text-sm text-brand-700">+ Record PDL upload</summary>
+                <ActionForm action={addDistribution} className="mt-3 space-y-2" resetOnSuccess>
+                  <input type="hidden" name="song_id" value={song.id} />
+                  <input type="hidden" name="distributor" value="PDL" />
+                  <input name="isrc" required placeholder="ISRC (e.g. INP2X2501681)" className="input font-mono" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input name="upc" placeholder="UPC" className="input font-mono" />
+                    <input name="catalog_number" placeholder="Catalog no." className="input font-mono" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input name="release_date" type="date" className="input" />
+                    <input name="dsp_status" placeholder="Cosmos status" className="input" />
+                  </div>
+                  <input name="proof_url" placeholder="Cosmos screenshot (Drive link)" className="input" />
+                  <Submit>Save</Submit>
+                </ActionForm>
+              </details>
+            )}
+              </> },
+              { key: "credits", label: "Credits", count: (creditsR.data ?? []).length, node: <>
+            <ul className="mb-3 space-y-1 text-sm">
+              {(creditsR.data ?? []).map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-2">
+                  <span><span className="text-muted">{c.role}:</span> {c.name}</span>
+                  {canWork && (
+                    <ActionForm action={removeCredit}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <Submit className="btn-danger">Remove</Submit>
+                    </ActionForm>
+                  )}
+                </li>
+              ))}
+              {(creditsR.data ?? []).length === 0 && <li className="text-muted">No credits yet.</li>}
+            </ul>
+            {canWork && (
+              <ActionForm action={addCredit} resetOnSuccess className="flex gap-2">
+                <input type="hidden" name="song_id" value={song.id} />
+                <select name="role" className="input w-32" defaultValue="Singer">
+                  {["Singer", "Lyricist", "Composer", "Music producer", "Mix engineer", "Mastering engineer", "Featuring"].map((r) => (
+                    <option key={r}>{r}</option>
+                  ))}
+                </select>
+                <input name="name" placeholder="Name" className="input" required />
+                <Submit className="btn-ghost">Add</Submit>
+              </ActionForm>
+            )}
+              </> },
+              { key: "content", label: "Content plan", count: (slotsR.data ?? []).length, node: <>
+            <ul className="mb-3 space-y-2 text-sm">
+              {(slotsR.data ?? []).map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-2">
+                  <span>
+                    <span className="text-muted">{fmtDate(c.planned_at, { day: "numeric", month: "short" })}</span> · {c.label}
+                    {c.went_live_at && <> <Badge tone="green">live</Badge></>}
+                  </span>
+                  {canWork && (
+                    <span className="flex gap-1">
+                      {!c.went_live_at && (
+                        <ActionForm action={markSlotLive}>
+                          <input type="hidden" name="id" value={c.id} />
+                          <Submit className="btn-ghost !px-2 !py-0.5 text-xs">Mark live</Submit>
+                        </ActionForm>
+                      )}
+                      <ActionForm action={removeContentSlot}>
+                        <input type="hidden" name="id" value={c.id} />
+                        <Submit className="btn-danger">✕</Submit>
+                      </ActionForm>
+                    </span>
+                  )}
+                </li>
+              ))}
+              {(slotsR.data ?? []).length === 0 && <li className="text-muted">Nothing planned yet.</li>}
+            </ul>
+            {canWork && (
+              <div className="space-y-3">
+                {formats.some((f) => f.mandatory && !f.planned_at) && (
+                  <ActionForm action={generateContentPlan}>
+                    <input type="hidden" name="song_id" value={song.id} />
+                    <Submit className="btn-ghost w-full">Plan 3 carousels + 3 verticals around release</Submit>
+                  </ActionForm>
+                )}
+                <ActionForm action={addContentSlot} resetOnSuccess className="flex gap-2">
+                  <input type="hidden" name="song_id" value={song.id} />
+                  <input type="hidden" name="page_id" value={song.page_id} />
+                  <input name="label" placeholder="e.g. Reel teaser" className="input" required />
+                  <input name="planned_at" type="date" className="input w-36" required />
+                  <Submit className="btn-ghost">Add</Submit>
+                </ActionForm>
+              </div>
+            )}
+              </> },
+              { key: "tasks", label: "Tasks", count: (tasksR.data ?? []).filter((t) => t.status !== "done").length, node: <>
+            <ul className="mb-3 space-y-1 text-sm">
+              {(tasksR.data ?? []).map((t) => (
+                <li key={t.id} className="flex justify-between gap-2">
+                  <span className={t.status === "done" ? "text-zinc-400 line-through" : ""}>{t.title}</span>
+                  <span className="shrink-0 text-xs text-muted">{t.assignee_id ? who(t.assignee_id) : "unassigned"}</span>
+                </li>
+              ))}
+              {(tasksR.data ?? []).length === 0 && <li className="text-muted">No tasks.</li>}
+            </ul>
+            {canWork && (
+              <ActionForm action={createTask} resetOnSuccess className="space-y-2">
+                <input type="hidden" name="song_id" value={song.id} />
+                <input type="hidden" name="page_id" value={song.page_id} />
+                <input name="title" placeholder="New task…" className="input" required />
+                <div className="flex gap-2">
+                  <select name="assignee_id" className="input" defaultValue="">
+                    <option value="">Unassigned</option>
+                    {people.map((p) => <option key={p.id} value={p.id}>{shortName(p)}</option>)}
+                  </select>
+                  <input name="due_at" type="date" className="input w-36" />
+                  <Submit className="btn-ghost">Add</Submit>
+                </div>
+              </ActionForm>
+            )}
+              </> },
+              ...(s.isOwner ? [{ key: "rights", label: "Royalty splits", node: <>
+              <p className="mb-2 flex items-center gap-2 text-xs text-zinc-600">
+                <OwnershipTag ownership={song.ownership} />
+                {song.ownership === "community" ? "Artist/label owns the master — record Zinema's share." : "Zinema owns the master."}
+              </p>
+              <p className="mb-3 text-xs text-muted">One per line: Party, role, master|publishing, share %. Each type must total 100.</p>
+              <ActionForm action={saveRights} className="space-y-2">
+                <input type="hidden" name="song_id" value={song.id} />
+                <textarea
+                  name="splits"
+                  rows={4}
+                  className="input font-mono text-xs"
+                  defaultValue={((rightsR.data?.splits ?? []) as { party: string; role: string; type: string; share_pct: number }[])
+                    .map((x) => `${x.party}, ${x.role}, ${x.type}, ${x.share_pct}`).join("\n")}
+                  placeholder={"Zinema Music, label, master, 100\nKavi, lyricist, publishing, 50\nRavi, composer, publishing, 50"}
+                />
+                <input name="contract_drive_url" defaultValue={rightsR.data?.contract_drive_url ?? ""} placeholder="Contract (Drive link)" className="input" />
+                <textarea name="notes" rows={2} defaultValue={rightsR.data?.notes ?? ""} placeholder="Contract notes" className="input" />
+                <Submit>Save rights</Submit>
+              </ActionForm>
+              </> }] : []),
+              { key: "activity", label: "Activity", node: <>
+            <ul className="space-y-1.5 text-xs text-zinc-600">
+              {(activityR.data ?? []).map((a) => (
+                <li key={a.id}>
+                  <span className="text-zinc-400">{fmtDate(a.at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>{" "}
+                  {who(a.actor_id)} · {describe(a.entity, a.action, a.diff as Record<string, string> | null)}
+                </li>
+              ))}
+              {(activityR.data ?? []).length === 0 && <li>Nothing yet.</li>}
+            </ul>
+              </> },
+            ]}
+          />
         </div>
 
         {/* Side panel */}
@@ -251,189 +422,6 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
                 <p className="text-xs text-muted">Created on the first upload.</p>
               )}
             </div>
-          </section>
-
-          {/* Distribution */}
-          <section className="card p-5 md:p-6">
-            <h2 className="eyebrow mb-4">Distribution</h2>
-            {(distR.data ?? []).map((r) => (
-              <dl key={r.id} className="mb-3 grid grid-cols-[90px_1fr] gap-y-1 text-sm">
-                <dt className="text-muted">Distributor</dt>
-                <dd>{r.distributor} {r.legacy && <Badge>legacy</Badge>}</dd>
-                <dt className="text-muted">ISRC</dt><dd className="font-mono">{r.isrc}</dd>
-                {r.upc && (<><dt className="text-muted">UPC</dt><dd className="font-mono">{r.upc}</dd></>)}
-                {r.catalog_number && (<><dt className="text-muted">Catalog no.</dt><dd className="font-mono">{r.catalog_number}</dd></>)}
-                <dt className="text-muted">Release</dt><dd>{fmtDate(r.release_date)}</dd>
-                {r.dsp_status && (<><dt className="text-muted">Status</dt><dd>{r.dsp_status}</dd></>)}
-              </dl>
-            ))}
-            {canWork && (
-              <details open={(distR.data ?? []).length === 0}>
-                <summary className="cursor-pointer text-sm text-brand-700">+ Record PDL upload</summary>
-                <ActionForm action={addDistribution} className="mt-3 space-y-2" resetOnSuccess>
-                  <input type="hidden" name="song_id" value={song.id} />
-                  <input type="hidden" name="distributor" value="PDL" />
-                  <input name="isrc" required placeholder="ISRC (e.g. INP2X2501681)" className="input font-mono" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input name="upc" placeholder="UPC" className="input font-mono" />
-                    <input name="catalog_number" placeholder="Catalog no." className="input font-mono" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input name="release_date" type="date" className="input" />
-                    <input name="dsp_status" placeholder="Cosmos status" className="input" />
-                  </div>
-                  <input name="proof_url" placeholder="Cosmos screenshot (Drive link)" className="input" />
-                  <Submit>Save</Submit>
-                </ActionForm>
-              </details>
-            )}
-          </section>
-
-          {/* Credits */}
-          <section className="card p-5 md:p-6">
-            <h2 className="eyebrow mb-4">Credits</h2>
-            <ul className="mb-3 space-y-1 text-sm">
-              {(creditsR.data ?? []).map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-2">
-                  <span><span className="text-muted">{c.role}:</span> {c.name}</span>
-                  {canWork && (
-                    <ActionForm action={removeCredit}>
-                      <input type="hidden" name="id" value={c.id} />
-                      <Submit className="btn-danger">Remove</Submit>
-                    </ActionForm>
-                  )}
-                </li>
-              ))}
-              {(creditsR.data ?? []).length === 0 && <li className="text-muted">No credits yet.</li>}
-            </ul>
-            {canWork && (
-              <ActionForm action={addCredit} resetOnSuccess className="flex gap-2">
-                <input type="hidden" name="song_id" value={song.id} />
-                <select name="role" className="input w-32" defaultValue="Singer">
-                  {["Singer", "Lyricist", "Composer", "Music producer", "Mix engineer", "Mastering engineer", "Featuring"].map((r) => (
-                    <option key={r}>{r}</option>
-                  ))}
-                </select>
-                <input name="name" placeholder="Name" className="input" required />
-                <Submit className="btn-ghost">Add</Submit>
-              </ActionForm>
-            )}
-          </section>
-
-          {/* Rights — owners only */}
-          {s.isOwner && (
-            <section className="card p-6 ring-2 ring-brand-500/25">
-              <h2 className="mb-1 font-medium">Royalty splits <Badge tone="violet">owners only</Badge></h2>
-              <p className="mb-2 flex items-center gap-2 text-xs text-zinc-600">
-                <OwnershipTag ownership={song.ownership} />
-                {song.ownership === "community" ? "Artist/label owns the master — record Zinema's share." : "Zinema owns the master."}
-              </p>
-              <p className="mb-3 text-xs text-muted">One per line: Party, role, master|publishing, share %. Each type must total 100.</p>
-              <ActionForm action={saveRights} className="space-y-2">
-                <input type="hidden" name="song_id" value={song.id} />
-                <textarea
-                  name="splits"
-                  rows={4}
-                  className="input font-mono text-xs"
-                  defaultValue={((rightsR.data?.splits ?? []) as { party: string; role: string; type: string; share_pct: number }[])
-                    .map((x) => `${x.party}, ${x.role}, ${x.type}, ${x.share_pct}`).join("\n")}
-                  placeholder={"Zinema Music, label, master, 100\nKavi, lyricist, publishing, 50\nRavi, composer, publishing, 50"}
-                />
-                <input name="contract_drive_url" defaultValue={rightsR.data?.contract_drive_url ?? ""} placeholder="Contract (Drive link)" className="input" />
-                <textarea name="notes" rows={2} defaultValue={rightsR.data?.notes ?? ""} placeholder="Contract notes" className="input" />
-                <Submit>Save rights</Submit>
-              </ActionForm>
-            </section>
-          )}
-
-          {/* Content plan */}
-          <section className="card p-5 md:p-6">
-            <h2 className="eyebrow mb-4">Content plan</h2>
-            <ul className="mb-3 space-y-2 text-sm">
-              {(slotsR.data ?? []).map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-2">
-                  <span>
-                    <span className="text-muted">{fmtDate(c.planned_at, { day: "numeric", month: "short" })}</span> · {c.label}
-                    {c.went_live_at && <> <Badge tone="green">live</Badge></>}
-                  </span>
-                  {canWork && (
-                    <span className="flex gap-1">
-                      {!c.went_live_at && (
-                        <ActionForm action={markSlotLive}>
-                          <input type="hidden" name="id" value={c.id} />
-                          <Submit className="btn-ghost !px-2 !py-0.5 text-xs">Mark live</Submit>
-                        </ActionForm>
-                      )}
-                      <ActionForm action={removeContentSlot}>
-                        <input type="hidden" name="id" value={c.id} />
-                        <Submit className="btn-danger">✕</Submit>
-                      </ActionForm>
-                    </span>
-                  )}
-                </li>
-              ))}
-              {(slotsR.data ?? []).length === 0 && <li className="text-muted">Nothing planned yet.</li>}
-            </ul>
-            {canWork && (
-              <div className="space-y-3">
-                {formats.some((f) => f.mandatory && !f.planned_at) && (
-                  <ActionForm action={generateContentPlan}>
-                    <input type="hidden" name="song_id" value={song.id} />
-                    <Submit className="btn-ghost w-full">Plan 3 carousels + 3 verticals around release</Submit>
-                  </ActionForm>
-                )}
-                <ActionForm action={addContentSlot} resetOnSuccess className="flex gap-2">
-                  <input type="hidden" name="song_id" value={song.id} />
-                  <input type="hidden" name="page_id" value={song.page_id} />
-                  <input name="label" placeholder="e.g. Reel teaser" className="input" required />
-                  <input name="planned_at" type="date" className="input w-36" required />
-                  <Submit className="btn-ghost">Add</Submit>
-                </ActionForm>
-              </div>
-            )}
-          </section>
-
-          {/* Tasks */}
-          <section className="card p-5 md:p-6">
-            <h2 className="eyebrow mb-4">Tasks</h2>
-            <ul className="mb-3 space-y-1 text-sm">
-              {(tasksR.data ?? []).map((t) => (
-                <li key={t.id} className="flex justify-between gap-2">
-                  <span className={t.status === "done" ? "text-zinc-400 line-through" : ""}>{t.title}</span>
-                  <span className="shrink-0 text-xs text-muted">{t.assignee_id ? who(t.assignee_id) : "unassigned"}</span>
-                </li>
-              ))}
-              {(tasksR.data ?? []).length === 0 && <li className="text-muted">No tasks.</li>}
-            </ul>
-            {canWork && (
-              <ActionForm action={createTask} resetOnSuccess className="space-y-2">
-                <input type="hidden" name="song_id" value={song.id} />
-                <input type="hidden" name="page_id" value={song.page_id} />
-                <input name="title" placeholder="New task…" className="input" required />
-                <div className="flex gap-2">
-                  <select name="assignee_id" className="input" defaultValue="">
-                    <option value="">Unassigned</option>
-                    {people.map((p) => <option key={p.id} value={p.id}>{shortName(p)}</option>)}
-                  </select>
-                  <input name="due_at" type="date" className="input w-36" />
-                  <Submit className="btn-ghost">Add</Submit>
-                </div>
-              </ActionForm>
-            )}
-          </section>
-
-          {/* Activity */}
-          <section className="card p-5 md:p-6">
-            <h2 className="eyebrow mb-4">Activity</h2>
-            <ul className="space-y-1.5 text-xs text-zinc-600">
-              {(activityR.data ?? []).map((a) => (
-                <li key={a.id}>
-                  <span className="text-zinc-400">{fmtDate(a.at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>{" "}
-                  {who(a.actor_id)} · {describe(a.entity, a.action, a.diff as Record<string, string> | null)}
-                </li>
-              ))}
-              {(activityR.data ?? []).length === 0 && <li>Nothing yet.</li>}
-            </ul>
           </section>
         </div>
       </div>

@@ -13,7 +13,6 @@ export function PublicHeader() {
         <Link href="/#platform" className="hover:text-white">Platform</Link>
         <Link href="/#ai" className="hover:text-white">Bring your AI</Link>
         <Link href="/#access" className="hover:text-white">Access</Link>
-        <Link href="/guide" className="hover:text-white">Guide</Link>
       </nav>
       <Link href="/board" className="btn !rounded-full !px-3.5 !py-1.5 text-xs sm:text-sm">Open <span className="hidden sm:inline">Zinema OS</span><span className="sm:hidden">app</span></Link>
     </header>
@@ -29,7 +28,6 @@ export function PublicFooter() {
           <p className="mt-1 text-xs text-muted">Zinema OS is the private workspace of the Zinema Music team.</p>
         </div>
         <div className="flex flex-wrap items-center gap-5 text-sm">
-          <Link href="/guide" className="text-zinc-600 hover:text-black">Guide</Link>
           <Link href="/login" className="text-zinc-600 hover:text-black">Sign in</Link>
           <a href="mailto:info@zinema.music" className="btn-ghost">info@zinema.music</a>
         </div>

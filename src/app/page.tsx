@@ -175,7 +175,7 @@ export default function Landing() {
         </p>
         <div className="mt-9 flex flex-wrap justify-center gap-3">
           <Link href="/login" className="btn !rounded-full !px-7 !py-3 !text-base">Sign in with Google</Link>
-          <Link href="/guide" className="btn-ghost !rounded-full !px-7 !py-3 !text-base">Read the guide</Link>
+          <a href="#platform" className="btn-ghost !rounded-full !px-7 !py-3 !text-base">See how it works</a>
         </div>
         <p className="mt-5 text-xs text-muted">Tamil · Hindi · Marathi · Spiritual · Community</p>
         <div className="mt-14 md:mt-20"><LiveBoard /></div>
@@ -226,7 +226,7 @@ export default function Landing() {
           <ul className="mt-6 space-y-3 text-sm md:text-base">
             {["It signs in as you — same pages, same role", "Everything it does is logged as “via AI”", "What it makes is filed in Drive, next to the song"].map((x) => <li key={x} className="flex items-center gap-3"><Sq />{x}</li>)}
           </ul>
-          <Link href="/guide#ai" className="btn-dark mt-8 !rounded-full !px-6 !py-2.5">How to connect</Link>
+          <Link href="/login?next=%2Fhelp" className="btn-dark mt-8 !rounded-full !px-6 !py-2.5">Sign in to connect yours</Link>
         </div>
         <AiTabs />
       </section>
