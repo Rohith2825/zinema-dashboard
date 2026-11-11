@@ -4,10 +4,10 @@ import { BrandIcon, type Brand } from "@/components/landing/logos";
 /** Shared header and footer for the public pages (landing, guide). */
 export function PublicHeader() {
   return (
-    <header className="sticky top-4 z-20 mx-auto flex w-[min(1120px,calc(100%-2rem))] items-center justify-between rounded-full bg-[#0b0b0d]/95 px-5 py-3 text-sm text-neutral-300 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.6)] backdrop-blur">
-      <Link href="/" className="flex items-end gap-2" aria-label="Zinema OS">
+    <header className="sticky top-3 z-20 mx-auto flex w-[min(1120px,calc(100%-1.5rem))] items-center justify-between gap-3 rounded-full bg-[#0b0b0d]/95 py-2.5 pl-4 pr-2.5 sm:top-4 sm:px-5 sm:py-3 text-sm text-neutral-300 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.6)] backdrop-blur">
+      <Link href="/" className="flex shrink-0 items-end gap-1.5 sm:gap-2" aria-label="Zinema OS">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/zinema-wordmark.png" alt="Zinema Music" width={100} height={24} />
+        <img src="/brand/zinema-wordmark.png" alt="Zinema Music" width={100} height={24} className="h-auto w-[84px] sm:w-[100px]" />
         <span className="text-xl font-black leading-none tracking-tight text-brand-500">OS</span>
       </Link>
       <nav className="hidden items-center gap-7 md:flex">
@@ -31,7 +31,7 @@ export function PublicFooter() {
   return (
     <footer className="mx-auto mt-24 w-[min(1120px,calc(100%-2rem))] pb-10 md:mt-32">
       <div className="card overflow-hidden !rounded-[32px] !shadow-raise-lg">
-        <div className="grid gap-10 p-7 md:grid-cols-[1.3fr_2fr] md:p-12">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-10 p-6 md:grid-cols-[1.3fr_2fr] md:p-12">
           <div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/zinema-logo-ink.png" alt="Zinema Music — It Just Hits" width={220} height={81} className="h-auto w-44 md:w-52" />
@@ -46,9 +46,9 @@ export function PublicFooter() {
               ))}
             </div>
           </div>
-          <nav className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4" aria-label="Footer">
+          <nav className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-4" aria-label="Footer">
             {FOOT.map((col) => (
-              <div key={col.title}>
+              <div key={col.title} className={`min-w-0 ${col.title === "Contact" ? "col-span-2 sm:col-span-1" : ""}`}>
                 <p className="eyebrow">{col.title}</p>
                 <ul className="mt-4 space-y-3 text-sm">
                   {col.links.map(([label, href, ext]) => (
@@ -56,7 +56,7 @@ export function PublicFooter() {
                       {href.startsWith("/") ? (
                         <Link href={href} className="text-zinc-700 hover:text-brand-700">{label}</Link>
                       ) : (
-                        <a href={href} {...(ext ? { target: "_blank", rel: "noreferrer" } : {})} className="break-words text-zinc-700 hover:text-brand-700">{label}{ext ? " ↗" : ""}</a>
+                        <a href={href} {...(ext ? { target: "_blank", rel: "noreferrer" } : {})} className="text-zinc-700 [overflow-wrap:anywhere] hover:text-brand-700">{label}{ext ? " ↗" : ""}</a>
                       )}
                     </li>
                   ))}
@@ -65,7 +65,7 @@ export function PublicFooter() {
             ))}
           </nav>
         </div>
-        <div className="well mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 !rounded-2xl px-5 py-4 text-xs text-muted md:mx-6 md:mb-6">
+        <div className="well mx-4 mb-4 flex flex-col items-center gap-2 !rounded-2xl px-5 py-4 text-center text-xs text-muted sm:flex-row sm:justify-between md:mx-6 md:mb-6">
           <p>© 2026 Zinema Music. All rights reserved.</p>
           <p className="flex items-center gap-2"><span className="inline-block h-2 w-2 bg-brand-500" />It Just Hits</p>
         </div>

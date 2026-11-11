@@ -80,7 +80,7 @@ function FlowArt() {
       {steps.map(([icon, who, what], i) => (
         <div key={who} className="tile flex items-center gap-4 p-4" style={{ marginLeft: `${i * 8}%` }}>
           <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${i === 2 ? "bg-brand-500 text-black" : "bg-[#0d0d10] text-white"}`}>{icon}</span>
-          <span className="text-sm"><b className="block">{who}</b><span className="text-muted">{what}</span></span>
+          <span className="min-w-0 text-sm"><b className="block">{who}</b><span className="text-muted">{what}</span></span>
         </div>
       ))}
     </div>
@@ -91,10 +91,10 @@ function FormatsArt() {
   const picks = SONGS.slice(0, 3);
   const formats: [string, string, Brand | null][] = [["Audio", "live", "spotify"], ["Vertical 1", "live", "instagram"], ["Lyric video", "in review", "youtube"], ["Flagship music video", "planned", null]];
   return (
-    <div className="well p-5 md:p-7">
-      <div className="flex items-end justify-center">
+    <div className="well overflow-hidden p-4 md:p-7">
+      <div className="flex items-end justify-center pt-2">
         {picks.map((s, i) => (
-          <a key={s.code} href={s.url} target="_blank" rel="noreferrer" title={`${s.title} on Spotify`} aria-label={`${s.title} on Spotify`} className={`block overflow-hidden rounded-2xl shadow-raise transition hover:-translate-y-1 ${i === 1 ? "z-10 w-36 md:w-44" : "w-28 opacity-90 md:w-32"} ${i === 0 ? "-mr-5 -rotate-6" : i === 2 ? "-ml-5 rotate-6" : ""}`}>
+          <a key={s.code} href={s.url} target="_blank" rel="noreferrer" title={`${s.title} on Spotify`} aria-label={`${s.title} on Spotify`} className={`block overflow-hidden rounded-2xl shadow-raise transition hover:-translate-y-1 ${i === 1 ? "z-10 w-[38%] max-w-44" : "w-[28%] max-w-32 opacity-90"} ${i === 0 ? "-mr-[5%] -rotate-6" : i === 2 ? "-ml-[5%] rotate-6" : ""}`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={s.cover} alt="" loading="lazy" className="aspect-square w-full bg-[#0d0d10] object-cover" />
           </a>
@@ -103,10 +103,10 @@ function FormatsArt() {
       <p className="mt-4 text-center text-sm font-semibold">{picks[1].title} <span className="ml-1 font-mono text-xs font-normal text-muted">{picks[1].code}</span></p>
       <div className="mt-4 space-y-2.5" aria-hidden="true">
         {formats.map(([name, state, brand]) => (
-          <div key={name} className="tile flex items-center gap-3 px-4 py-3 text-sm">
-            <span className="flex-1 font-medium">{name}</span>
+          <div key={name} className="tile flex items-center gap-2.5 px-3.5 py-3 text-sm">
+            <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
             {brand && <BrandIcon name={brand} size={16} />}
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${state === "live" ? "bg-brand-500 text-black" : state === "planned" ? "bg-black/[0.06] text-zinc-600" : "bg-sky-500/15 text-sky-800"}`}>{state}</span>
+            <span className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${state === "live" ? "bg-brand-500 text-black" : state === "planned" ? "bg-black/[0.06] text-zinc-600" : "bg-sky-500/15 text-sky-800"}`}>{state}</span>
           </div>
         ))}
       </div>
@@ -119,9 +119,9 @@ function DriveArt() {
   return (
     <div className="well space-y-2 p-5 md:p-7" aria-hidden="true">
       {rows.map(([depth, name, hot]) => (
-        <div key={name} className={`tile flex items-center gap-3 px-4 py-2.5 text-sm ${hot ? "ring-2 ring-brand-500/50" : ""}`} style={{ marginLeft: depth * 22 }}>
+        <div key={name} className={`tile flex items-center gap-3 px-4 py-2.5 text-sm ${hot ? "ring-2 ring-brand-500/50" : ""}`} style={{ marginLeft: `min(${depth * 22}px, ${depth * 5}%)` }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill={hot ? "#fc7c0f" : "#0d0d10"} aria-hidden="true"><path d="M3 6a2 2 0 012-2h4l2 2h8a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-          <span className={hot ? "font-semibold" : ""}>{name}</span>
+          <span className={`min-w-0 truncate ${hot ? "font-semibold" : ""}`}>{name}</span>
         </div>
       ))}
     </div>
@@ -167,34 +167,36 @@ export default function Landing() {
       <section className={`${W} relative pt-16 text-center md:pt-24`}>
         <div className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[520px] w-[min(900px,100vw)] -translate-x-1/2" style={{ background: "radial-gradient(closest-side, rgba(252,124,15,0.18), transparent)" }} />
         <p className="tile mx-auto inline-flex items-center gap-2 !rounded-full px-4 py-1.5 text-xs font-medium"><Sq />The Zinema Music operating system</p>
-        <h1 className="mx-auto mt-7 max-w-4xl text-[2.6rem] font-semibold leading-[1.03] tracking-tight md:text-7xl">
+        <h1 className="mx-auto mt-7 max-w-4xl text-[2.15rem] font-semibold leading-[1.05] tracking-tight min-[400px]:text-[2.6rem] md:text-7xl">
           Every song, from first lyric to <span className="text-brand-500">live.</span>
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-base text-muted md:text-lg">
           One calm place for the whole team — writing, mixing, approvals, releases and every post after — with your AI working alongside you.
         </p>
-        <div className="mt-9 flex flex-wrap justify-center gap-3">
-          <Link href="/login" className="btn !rounded-full !px-7 !py-3 !text-base">Sign in with Google</Link>
-          <a href="#platform" className="btn-ghost !rounded-full !px-7 !py-3 !text-base">See how it works</a>
+        <div className="mx-auto mt-9 flex max-w-xs flex-wrap justify-center gap-3 sm:max-w-none">
+          <Link href="/login" className="btn w-full !rounded-full !px-7 !py-3 !text-base sm:w-auto">Sign in with Google</Link>
+          <a href="#platform" className="btn-ghost w-full !rounded-full !px-7 !py-3 !text-base sm:w-auto">See how it works</a>
         </div>
         <p className="mt-5 text-xs text-muted">Tamil · Hindi · Marathi · Spiritual · Community</p>
         <div className="mt-14 md:mt-20"><LiveBoard /></div>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-muted">
-          <span className="eyebrow">Works with</span>
-          {(["claude", "chatgpt", "gemini", "drive", "spotify"] as Brand[]).map((b) => (
-            <span key={b} className="flex items-center gap-2 font-medium text-zinc-700">
-              <BrandIcon name={b} size={20} />
-              {{ claude: "Claude", chatgpt: "ChatGPT", gemini: "Gemini", drive: "Google Drive", spotify: "Spotify" }[b as "claude"]}
-              {b === "gemini" && <span className="rounded-full bg-black/[0.06] px-1.5 py-0.5 text-[10px] font-normal text-muted">soon</span>}
-            </span>
-          ))}
+        <div className="mt-10">
+          <p className="eyebrow">Works with</p>
+          <ul className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2.5 sm:max-w-none">
+            {(["claude", "chatgpt", "gemini", "drive", "spotify"] as Brand[]).map((b) => (
+              <li key={b} className="tile flex items-center gap-2 !rounded-full px-3.5 py-2 text-sm font-medium text-zinc-700">
+                <BrandIcon name={b} size={18} />
+                {{ claude: "Claude", chatgpt: "ChatGPT", gemini: "Gemini", drive: "Google Drive", spotify: "Spotify" }[b as "claude"]}
+                {b === "gemini" && <span className="rounded-full bg-black/[0.06] px-1.5 py-0.5 text-[10px] font-normal text-muted">soon</span>}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
       {/* Pipeline */}
       <section id="platform" className={`${W} mt-20 md:mt-32`}>
         <p className="eyebrow">The pipeline</p>
-        <h2 className="mt-3 max-w-2xl text-3xl font-semibold md:text-5xl">Eight stages. One direction. No guessing.</h2>
+        <h2 className="mt-3 max-w-2xl text-[1.7rem] font-semibold leading-tight md:text-5xl">Eight stages. One direction. No guessing.</h2>
         <p className="mt-4 max-w-2xl text-muted md:text-lg">Each stage has things that must exist and a check that must pass. Nothing is skipped: the song only moves when an approver signs off.</p>
         <PipelineArt />
         <p className="mt-1 text-center text-xs text-muted sm:hidden">Swipe through the eight stages →</p>
@@ -202,24 +204,24 @@ export default function Landing() {
 
       {/* Feature rows */}
       {ROWS.map((r, i) => (
-        <section key={r.title} className={`${W} mt-24 grid items-center gap-10 md:mt-32 md:grid-cols-2 md:gap-16`}>
-          <div className={i % 2 ? "md:order-2" : ""}>
+        <section key={r.title} className={`${W} mt-20 grid grid-cols-[minmax(0,1fr)] items-center gap-10 md:mt-32 md:grid-cols-2 md:gap-16`}>
+          <div className={`min-w-0 ${i % 2 ? "md:order-2" : ""}`}>
             <p className="eyebrow">{r.eyebrow}</p>
-            <h2 className="mt-3 text-3xl font-semibold md:text-[2.75rem] md:leading-[1.08]">{r.title}</h2>
+            <h2 className="mt-3 text-[1.7rem] font-semibold leading-tight md:text-[2.75rem] md:leading-[1.08]">{r.title}</h2>
             <p className="mt-5 text-muted md:text-lg">{r.body}</p>
             <ul className="mt-6 space-y-3 text-sm md:text-base">
               {r.points.map((x) => <li key={x} className="flex items-center gap-3"><Sq />{x}</li>)}
             </ul>
           </div>
-          <div>{r.art}</div>
+          <div className="min-w-0">{r.art}</div>
         </section>
       ))}
 
       {/* AI */}
-      <section id="ai" className={`${W} mt-24 grid items-center gap-10 md:mt-32 md:grid-cols-2 md:gap-16`}>
-        <div className="md:order-2">
+      <section id="ai" className={`${W} mt-20 grid grid-cols-[minmax(0,1fr)] items-center gap-10 md:mt-32 md:grid-cols-2 md:gap-16`}>
+        <div className="min-w-0 md:order-2">
           <p className="eyebrow">Bring your own AI</p>
-          <h2 className="mt-3 text-3xl font-semibold md:text-[2.75rem] md:leading-[1.08]">Claude and ChatGPT, on the team.</h2>
+          <h2 className="mt-3 text-[1.7rem] font-semibold leading-tight md:text-[2.75rem] md:leading-[1.08]">Claude and ChatGPT, on the team.</h2>
           <div className="mt-5 flex gap-3">{(["claude", "chatgpt", "gemini"] as Brand[]).map((b) => <span key={b} className="tile flex h-12 w-12 items-center justify-center !rounded-2xl"><BrandIcon name={b} size={24} /></span>)}</div>
           <p className="mt-5 text-muted md:text-lg">
             Zinema OS speaks MCP. Connect your assistant and ask “what&apos;s waiting on me?”, “plan the verticals for TAM-0007” or “save this caption sheet to the song&apos;s folder”.
@@ -235,7 +237,7 @@ export default function Landing() {
       {/* Everyday */}
       <section className={`${W} mt-24 md:mt-32`}>
         <p className="eyebrow">And the everyday things</p>
-        <h2 className="mt-3 max-w-2xl text-3xl font-semibold md:text-5xl">Built around how the team actually works.</h2>
+        <h2 className="mt-3 max-w-2xl text-[1.7rem] font-semibold leading-tight md:text-5xl">Built around how the team actually works.</h2>
         <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {[
             ["M5 6h14v14H5zM5 10h14M9 3v4M15 3v4", "Calendars that agree", "Song releases and content drops on one calendar, in India time."],
@@ -257,7 +259,7 @@ export default function Landing() {
       {/* Access & pricing */}
       <section id="access" className={`${W} mt-24 md:mt-36`}>
         <p className="eyebrow">Access &amp; pricing</p>
-        <h2 className="mt-3 max-w-2xl text-3xl font-semibold md:text-5xl">Built for the team. Open by invitation.</h2>
+        <h2 className="mt-3 max-w-2xl text-[1.7rem] font-semibold leading-tight md:text-5xl">Built for the team. Open by invitation.</h2>
         <p className="mt-4 max-w-2xl text-muted md:text-lg">Zinema OS isn&apos;t sold as software. It&apos;s how Zinema Music works — and how the people we work with stay in the loop.</p>
         <div className="-mx-4 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
           {PLANS.map((p) => (
@@ -281,7 +283,7 @@ export default function Landing() {
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/zinema-logo.png" alt="Zinema Music — It Just Hits" width={260} height={95} className="mx-auto h-auto w-52 md:w-64" />
-            <h2 className="mx-auto mt-8 max-w-2xl text-3xl font-semibold md:text-5xl">You&apos;re part of something that just hits.</h2>
+            <h2 className="mx-auto mt-8 max-w-2xl text-[1.7rem] font-semibold leading-tight md:text-5xl">You&apos;re part of something that just hits.</h2>
             <p className="mx-auto mt-4 max-w-md text-neutral-400">Sign in with your Google account. Not on a page yet? Write to <a href="mailto:info@zinema.music" className="text-brand-400 underline">info@zinema.music</a>.</p>
             <Link href="/login" className="btn mt-8 !rounded-full !px-7 !py-3 !text-base">Open Zinema OS</Link>
           </div>

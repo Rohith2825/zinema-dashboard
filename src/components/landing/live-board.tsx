@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { STAGES } from "@/lib/types";
 import { SONGS } from "./songs";
 
@@ -16,10 +16,16 @@ const VERB: Record<string, string> = {
   lyrics: "new song started → Lyrics",
 };
 
-/** A working miniature of the song board: every couple of seconds a real release moves to its next stage. */
+/**
+ * A working miniature of the song board: every couple of seconds a real release moves to its next stage.
+ * The frame never changes size: every column has a fixed width and height, and on phones the eight columns
+ * sit in one row you can swipe (it follows the song that just moved until you touch it).
+ */
 export function LiveBoard() {
   const [stage, setStage] = useState(START);
   const [last, setLast] = useState(-1);
+  const strip = useRef<HTMLDivElement>(null);
+  const touched = useRef(false);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -33,6 +39,14 @@ export function LiveBoard() {
     return () => clearInterval(id);
   }, []);
 
+  // On phones, keep the column that just received a song in view.
+  useEffect(() => {
+    const el = strip.current;
+    if (!el || last < 0 || touched.current || el.scrollWidth <= el.clientWidth) return;
+    const col = el.children[stage[last]] as HTMLElement | undefined;
+    if (col) el.scrollTo({ left: col.offsetLeft - (el.clientWidth - col.offsetWidth) / 2, behavior: "smooth" });
+  }, [last, stage]);
+
   const moved = last >= 0 ? SONGS[last] : null;
   return (
     <div className="card relative mx-auto max-w-5xl p-3 text-left !shadow-raise-lg md:p-5" aria-hidden="true">
@@ -42,23 +56,27 @@ export function LiveBoard() {
         <span className="ml-auto flex items-center gap-1.5 text-[11px] font-medium text-emerald-700"><i className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />Live</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 lg:grid-cols-8">
+      <div
+        ref={strip}
+        onPointerDown={() => { touched.current = true; }}
+        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] lg:mx-0 lg:grid lg:grid-cols-8 lg:overflow-visible lg:px-0"
+      >
         {STAGES.map((st, col) => {
           const here = SONGS.map((s, i) => ({ s, i })).filter(({ i }) => stage[i] === col);
           return (
-            <div key={st.key} className="well min-h-[7.5rem] !rounded-2xl p-1.5 md:min-h-40 md:p-2">
-              <p className="mb-1.5 flex items-center justify-between px-1 text-[8px] font-semibold uppercase tracking-wider text-zinc-600 md:text-[9px]">
+            <div key={st.key} className="well flex h-[232px] w-[136px] shrink-0 flex-col overflow-hidden !rounded-2xl p-2 lg:w-auto">
+              <p className="mb-2 flex items-center justify-between px-1 text-[9px] font-semibold uppercase tracking-wider text-zinc-600">
                 <span className="truncate">{st.label}</span>
-                <span className="text-muted">{here.length}</span>
+                <span className="ml-1 rounded-full bg-black/[0.06] px-1.5 text-muted">{here.length}</span>
               </p>
-              <div className="grid grid-cols-2 gap-1.5 sm:block sm:space-y-1.5">
-                {here.map(({ s, i }) => (
-                  <div key={s.code} className={`tile flex items-center justify-center gap-1.5 !rounded-xl p-1 sm:justify-start md:gap-2 md:p-1.5 ${i === last ? "lb-pop ring-2 ring-brand-500/70" : ""}`}>
+              <div className="space-y-1.5">
+                {here.slice(0, 4).map(({ s, i }) => (
+                  <div key={s.code} className={`tile flex h-11 items-center gap-2 !rounded-xl p-1.5 ${i === last ? "lb-pop ring-2 ring-brand-500/70" : ""}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={s.cover} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded-lg bg-[#0d0d10] object-cover sm:h-6 sm:w-6 sm:rounded-md md:h-8 md:w-8 md:rounded-lg" />
-                    <span className="hidden min-w-0 sm:block">
-                      <span className="block truncate text-[9px] font-semibold leading-tight md:text-[11px]">{s.title}</span>
-                      <span className="hidden font-mono text-[8px] text-muted md:block">{s.code}</span>
+                    <img src={s.cover} alt="" loading="lazy" width={32} height={32} className="h-8 w-8 shrink-0 rounded-lg bg-[#0d0d10] object-cover" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[11px] font-semibold leading-tight">{s.title}</span>
+                      <span className="block truncate font-mono text-[8.5px] text-muted">{s.code}</span>
                     </span>
                   </div>
                 ))}
@@ -68,8 +86,8 @@ export function LiveBoard() {
         })}
       </div>
 
-      {/* What just happened */}
-      <div className="mt-3 flex min-h-9 items-center gap-2.5 rounded-xl bg-[#0b0b0d] px-3 py-2 text-[11px] text-neutral-300 md:text-xs">
+      {/* What just happened (always one line, so the frame never jumps) */}
+      <div className="mt-3 flex h-9 items-center gap-2.5 overflow-hidden rounded-xl bg-[#0b0b0d] px-3 text-[11px] text-neutral-300 md:text-xs">
         <span className="eq-loader shrink-0" aria-hidden="true"><i /><i /><i /><i /></span>
         {moved ? (
           <span key={`${moved.code}-${stage[last]}`} className="lb-fade truncate">
