@@ -3,7 +3,10 @@ import Link from "next/link";
 import { Cover } from "@/components/cover";
 import { CatalogSkeleton } from "@/components/skeletons";
 import { Empty, OwnershipTag, PageDot, PageTabs, PageTitle, pageShort } from "@/components/ui";
-import { driveThumb } from "@/lib/drive";
+import { coverSrc } from "@/lib/drive";
+import { syncFromSpotify } from "@/app/actions";
+import { ActionForm, Submit } from "@/components/action-form";
+import { spotifyConfigured } from "@/lib/spotify";
 import { getSession, pageBySlug } from "@/lib/session";
 import { FORMAT_ICON, KIND_LABEL, fmtDate, stageLabel, type DeliverableKind, type FormatStatus, type StageKey } from "@/lib/types";
 
@@ -16,7 +19,7 @@ export default function CatalogPage({ searchParams }: PageProps<"/catalog">) {
 }
 
 type Row = {
-  id: string; code: string; title: string; artists: string | null; cover_url: string | null; ownership: string; current_stage: StageKey;
+  id: string; code: string; title: string; artists: string | null; cover_url: string | null; cover_image_url: string | null; spotify_url: string | null; ownership: string; current_stage: StageKey;
   planned_release_date: string | null; metadata: { language?: string } | null;
   page: { name: string; slug: string; code_prefix: string } | null;
   distribution_records: { isrc: string | null; release_date: string | null; distributor: string; legacy: boolean }[];
@@ -41,7 +44,7 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
   let query = s.supabase
     .from("songs")
     .select(
-      "id, code, title, artists, cover_url, ownership, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix), distribution_records(isrc, release_date, distributor, legacy), song_formats(kind, status, format_publications(platform))",
+      "id, code, title, artists, cover_url, cover_image_url, spotify_url, ownership, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix), distribution_records(isrc, release_date, distributor, legacy), song_formats(kind, status, format_publications(platform))",
     )
     .is("archived_at", null)
     .order("code");
@@ -52,7 +55,7 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
   let songs = (data ?? []) as unknown as Row[];
   if (view === "released") songs = songs.filter((x) => x.current_stage === "live");
   if (view === "in_progress") songs = songs.filter((x) => x.current_stage !== "live");
-  if (view === "missing") songs = songs.filter((x) => !x.artists || !x.cover_url);
+  if (view === "missing") songs = songs.filter((x) => !x.artists || !(x.cover_url || x.cover_image_url));
 
   const extra = { q: q || undefined, view: view === "all" ? undefined : view, own };
   const href = (v: string, o: string | undefined = own) => {
@@ -71,12 +74,19 @@ async function Catalog({ searchParams }: Pick<PageProps<"/catalog">, "searchPara
         title="Catalog"
         sub={`${songs.length} ${songs.length === 1 ? "song" : "songs"}${page ? ` on ${pageShort(page.name)}` : ""} · open a song to add its cover, artists, formats and where they're published`}
         actions={
+          <>
+          {s.isAdmin && spotifyConfigured() && (
+            <ActionForm action={syncFromSpotify} className="flex flex-col items-end">
+              <Submit className="btn-ghost">Sync from Spotify</Submit>
+            </ActionForm>
+          )}
           <form action="/catalog" className="flex gap-2">
             {page && <input type="hidden" name="page" value={page.slug} />}
             {view !== "all" && <input type="hidden" name="view" value={view} />}
             {own && <input type="hidden" name="own" value={own} />}
             <input name="q" defaultValue={q} placeholder="Search title, code, artist…" className="input w-60" aria-label="Search the catalog" />
           </form>
+          </>
         }
       />
       <PageTabs pages={s.pages} current={page?.slug} base="/catalog" extra={extra} />
@@ -128,7 +138,7 @@ function SongCard({ song }: { song: Row }) {
     <li>
       <Link href={`/songs/${song.code}`} className="tile group block overflow-hidden !rounded-[22px] p-2">
         <div className="relative">
-          <Cover src={driveThumb(song.cover_url, 500)} code={song.code} title={song.title} prefix={song.page?.code_prefix} className="rounded-2xl" />
+          <Cover src={coverSrc(song, 500)} code={song.code} title={song.title} prefix={song.page?.code_prefix} className="rounded-2xl" />
           <span className="absolute right-2 top-2"><OwnershipTag ownership={song.ownership} short /></span>
           <span className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${released ? "bg-brand-500 text-black" : "bg-white/90 text-zinc-800"}`}>
             {released ? "Released" : stageLabel(song.current_stage)}

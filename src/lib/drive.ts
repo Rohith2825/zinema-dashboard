@@ -18,3 +18,8 @@ export function driveThumb(url: string | null | undefined, width = 600): string 
   const id = parseDriveId(url);
   return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w${width}` : null;
 }
+
+/** Best cover we have: the team's Drive artwork first, then the one pulled from Spotify. */
+export function coverSrc(song: { cover_url?: string | null; cover_image_url?: string | null }, width = 600): string | null {
+  return driveThumb(song.cover_url, width) ?? song.cover_image_url ?? null;
+}

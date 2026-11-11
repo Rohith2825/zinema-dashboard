@@ -11,7 +11,7 @@ import { ActionForm, Submit } from "@/components/action-form";
 import { Cover } from "@/components/cover";
 import { DriveUpload } from "@/components/drive-upload";
 import { folderUrl } from "@/lib/site";
-import { driveThumb } from "@/lib/drive";
+import { coverSrc } from "@/lib/drive";
 import { Badge, Empty, OwnershipTag, PageDot, VERSION_LABEL, VERSION_TONE, pageShort, type Tone } from "@/components/ui";
 import { getSession, type Session } from "@/lib/session";
 import {
@@ -57,7 +57,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
 
   const { data: song } = await db
     .from("songs")
-    .select("id, code, title, artists, cover_url, ownership, drive_folder_id, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix)")
+    .select("id, code, title, artists, cover_url, cover_image_url, spotify_url, duration_ms, ownership, drive_folder_id, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix)")
     .eq("code", decodeURIComponent(code).toUpperCase())
     .maybeSingle();
   if (!song) notFound();
@@ -105,7 +105,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
         <Link href={`/board${page ? `?page=${page.slug}` : ""}`} className="text-sm text-muted hover:text-zinc-800">← Board</Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
-          <Cover src={driveThumb(song.cover_url, 400)} code={song.code} title={song.title} prefix={page?.code_prefix} className="w-24 shrink-0 rounded-2xl shadow-raise sm:w-32" />
+          <Cover src={coverSrc(song, 400)} code={song.code} title={song.title} prefix={page?.code_prefix} className="w-24 shrink-0 rounded-2xl shadow-raise sm:w-32" />
           <div>
             <p className="font-mono text-xs text-muted">{song.code}</p>
             <h1 className="text-3xl font-semibold tracking-tight">{song.title}</h1>
@@ -117,6 +117,12 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
               {meta.style && <Badge>{meta.style}</Badge>}
               <Badge tone="violet">{stageLabel(song.current_stage)}</Badge>
               {song.planned_release_date && <Badge tone="amber">Release {fmtDate(song.planned_release_date)}</Badge>}
+              {song.duration_ms && <Badge>{Math.floor(song.duration_ms / 60000)}:{String(Math.round((song.duration_ms % 60000) / 1000)).padStart(2, "0")}</Badge>}
+              {song.spotify_url && (
+                <a href={song.spotify_url} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-full bg-[#1db954]/15 px-2 py-0.5 text-[11px] font-medium text-[#0d7a36] hover:bg-[#1db954]/25">
+                  Listen on Spotify ↗
+                </a>
+              )}
             </div>
           </div>
           </div>

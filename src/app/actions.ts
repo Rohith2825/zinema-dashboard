@@ -8,6 +8,7 @@ import { parseDriveId } from "@/lib/drive";
 import { headers } from "next/headers";
 import { DriveError, createUploadSession, driveConfigured, ensureFolder, ensureSongFolder, getFile, shareWithLink } from "@/lib/google-drive";
 import { newToken, tokensEnabled } from "@/lib/mcp/auth";
+import { spotifyConfigured, syncSpotify } from "@/lib/spotify";
 
 async function ctx() {
   const supabase = await createClient();
@@ -568,4 +569,18 @@ export async function revokeMcpToken(_: ActionState, fd: FormData): Promise<Acti
   if (error) return fail(friendly(error));
   refresh();
   return undefined;
+}
+
+// ─────────── Spotify ───────────
+export async function syncFromSpotify(): Promise<ActionState> {
+  const { supabase } = await ctx();
+  if (!spotifyConfigured()) return fail("Spotify isn't connected yet. An admin needs to add the Spotify settings.");
+  try {
+    const r = await syncSpotify(supabase);
+    refresh();
+    const extra = r.notInZinemaOS.length ? ` ${r.notInZinemaOS.length} on Spotify aren't in Zinema OS yet: ${r.notInZinemaOS.map((x) => x.name).join(", ")}.` : "";
+    return { ok: `Updated ${r.updated.length} of ${r.found} Spotify tracks.${extra}` };
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "Spotify sync failed.");
+  }
 }

@@ -2,6 +2,7 @@ import "server-only";
 import { parseDriveId } from "@/lib/drive";
 import { DriveError, driveConfigured, ensureFolder, ensureSongFolder, folderUrl, getFile, listFolder, uploadBytes } from "@/lib/google-drive";
 import { SITE_URL } from "@/lib/site";
+import { spotifyConfigured, syncSpotify } from "@/lib/spotify";
 import { FORMAT_PLATFORMS, KIND_LABEL, PLATFORM_LABEL, STAGES } from "@/lib/types";
 import type { McpAuth } from "./auth";
 
@@ -46,7 +47,7 @@ async function songByCode(ctx: McpAuth, code: string) {
   const data = check(
     await ctx.supabase
       .from("songs")
-      .select("id, code, title, page_id, current_stage, ownership, artists, planned_release_date, drive_folder_id, metadata")
+      .select("id, code, title, page_id, current_stage, ownership, artists, planned_release_date, drive_folder_id, spotify_url, cover_image_url, duration_ms, metadata")
       .eq("code", code.toUpperCase())
       .maybeSingle(),
   );
@@ -627,6 +628,17 @@ export const TOOLS: Tool[] = [
         if (ids.length && c) await ctx.supabase.from("mentions").insert(ids.map((user_id) => ({ comment_id: c.id, user_id })));
       }
       return { ok: true };
+    },
+  },
+
+  {
+    name: "sync_spotify",
+    title: "Sync from Spotify",
+    description: "Pull Zinema Music's releases from Spotify and fill in cover art, Spotify link, duration, release date and artist for songs matched by ISRC. Also lists Spotify tracks that aren't in Zinema OS yet.",
+    inputSchema: { type: "object", properties: {} },
+    async run(ctx) {
+      if (!spotifyConfigured()) throw new ToolError("Spotify isn't connected to Zinema OS yet.");
+      return syncSpotify(ctx.supabase);
     },
   },
 
