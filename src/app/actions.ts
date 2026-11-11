@@ -12,9 +12,10 @@ import { spotifyConfigured, syncSpotify } from "@/lib/spotify";
 
 async function ctx() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/login");
-  return { supabase, uid: data.user.id };
+  const { data } = await supabase.auth.getClaims();
+  const uid = data?.claims?.sub;
+  if (!uid) redirect("/login");
+  return { supabase, uid: uid as string };
 }
 
 const str = (fd: FormData, k: string) => {

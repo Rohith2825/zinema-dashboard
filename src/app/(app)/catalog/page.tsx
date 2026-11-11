@@ -138,7 +138,7 @@ function SongCard({ song }: { song: Row }) {
     <li>
       <Link href={`/songs/${song.code}`} className="tile group block overflow-hidden !rounded-[22px] p-2">
         <div className="relative">
-          <Cover src={coverSrc(song, 500)} code={song.code} title={song.title} prefix={song.page?.code_prefix} className="rounded-2xl" />
+          <Cover src={coverSrc(song, 300)} code={song.code} title={song.title} prefix={song.page?.code_prefix} className="rounded-2xl" />
           <span className="absolute right-2 top-2"><OwnershipTag ownership={song.ownership} short /></span>
           <span className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${released ? "bg-brand-500 text-black" : "bg-white/90 text-zinc-800"}`}>
             {released ? "Released" : stageLabel(song.current_stage)}

@@ -6,9 +6,17 @@ import type { AccessLevel, Page, PageRole, Profile } from "./types";
 /** Everything a screen needs about the signed-in person. Cached per request. */
 export const getSession = cache(async () => {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  const user = auth.user;
-  if (!user) redirect("/login");
+  // The proxy has already refreshed and checked the session for this request, so read the signed claims
+  // (verified locally against the project's public keys) instead of asking the auth server again.
+  // The database still enforces who can see what on every query.
+  const { data: auth } = await supabase.auth.getClaims();
+  const claims = auth?.claims;
+  if (!claims?.sub) redirect("/login");
+  const user = {
+    id: claims.sub as string,
+    email: (claims.email as string | undefined) ?? undefined,
+    user_metadata: (claims.user_metadata ?? {}) as Record<string, unknown>,
+  };
 
   const [profileRes, membershipsRes, pagesRes, ownerRes, unreadRes, allRes] = await Promise.all([
     supabase.from("profiles").select("id, full_name, nickname, handle, bio, email, is_org_admin").eq("id", user.id).maybeSingle(),

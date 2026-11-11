@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+import { safeNext } from "@/lib/site";
 import { GoogleButton } from "./google-button";
 import "./login.css";
 
@@ -60,7 +61,7 @@ async function LoginForm({ searchParams }: Pick<PageProps<"/login">, "searchPara
   return (
     <>
       {error && <p className="zl-error">Sign-in failed. Please try again.</p>}
-      <GoogleButton className="zl-google" next={typeof next === "string" ? next : undefined} />
+      <GoogleButton className="zl-google" next={typeof next === "string" ? safeNext(next) : undefined} />
     </>
   );
 }

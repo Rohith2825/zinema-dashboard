@@ -106,7 +106,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
         <Link href={`/board${page ? `?page=${page.slug}` : ""}`} className="text-sm text-muted hover:text-zinc-800">← Board</Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
-          <Cover src={coverSrc(song, 400)} code={song.code} title={song.title} prefix={page?.code_prefix} className="w-20 shrink-0 rounded-2xl shadow-raise sm:w-32" />
+          <Cover src={coverSrc(song, 300)} code={song.code} title={song.title} prefix={page?.code_prefix} className="w-20 shrink-0 rounded-2xl shadow-raise sm:w-32" />
           <div>
             <p className="font-mono text-xs text-muted">{song.code}</p>
             <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{song.title}</h1>

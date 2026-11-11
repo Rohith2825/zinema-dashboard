@@ -21,5 +21,6 @@ export function driveThumb(url: string | null | undefined, width = 600): string 
 
 /** Best cover we have: the team's Drive artwork first, then the one pulled from Spotify. */
 export function coverSrc(song: { cover_url?: string | null; cover_image_url?: string | null }, width = 600): string | null {
-  return driveThumb(song.cover_url, width) ?? song.cover_image_url ?? null;
+  const spotify = song.cover_image_url?.replace("ab67616d0000b273", width <= 320 ? "ab67616d00001e02" : "ab67616d0000b273");
+  return driveThumb(song.cover_url, width) ?? spotify ?? null;
 }
