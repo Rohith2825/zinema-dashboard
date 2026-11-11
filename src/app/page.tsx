@@ -88,7 +88,7 @@ export default function Landing() {
             <p className="eyebrow">Bring your own AI</p>
             <h2 className="mt-3 text-3xl font-semibold md:text-5xl">Zinema OS speaks MCP.</h2>
             <p className="mt-5 text-muted">
-              Connect Claude — or any assistant that supports the Model Context Protocol — and ask it things like “what&apos;s waiting on me?”, “plan the verticals for TAM-0007” or “save this caption sheet to the song&apos;s Drive folder”.
+              Connect Claude or ChatGPT and ask it things like “what&apos;s waiting on me?”, “plan the verticals for TAM-0007” or “save this caption sheet to the song&apos;s Drive folder”.
             </p>
             <ul className="mt-6 space-y-3 text-sm">
               {["It signs in as you, so it can only do what your role allows", "Everything it does is logged as “via AI”", "What it creates is filed in Google Drive, next to the song"].map((x) => (

@@ -36,7 +36,7 @@ async function Connect() {
     <>
       <PageTitle
         title="Connect your AI"
-        sub="Zinema OS is also an MCP server. Plug in Claude — or any AI that speaks MCP — and it can read the pipeline, move work forward and file what it makes into Google Drive, with exactly your permissions."
+        sub="Zinema OS is also an MCP server. Plug in Claude or ChatGPT and it can read the pipeline, move work forward and file what it makes into Google Drive, with exactly your permissions."
       />
 
       <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_400px]">
@@ -46,14 +46,14 @@ async function Connect() {
             <div className="mt-3"><CopyBox value={url} label="Copy URL" /></div>
             <ol className="mt-6 grid gap-4 md:grid-cols-3">
               {[
-                ["Claude (web, desktop, mobile)", "Settings → Connectors → Add custom connector. Paste the address, then sign in with your Zinema Google account when asked."],
-                ["Claude Code", `claude mcp add --transport http zinema-os ${url}`],
-                ["Other AI tools", "Add a remote (HTTP) MCP server with the address above. If the tool can't open a sign-in window, use a personal token as a Bearer header."],
+                ["Claude", "Settings → Connectors → Add custom connector. Paste the address, connect, and sign in with your Zinema Google account."],
+                ["ChatGPT", "Settings → Apps & Connectors → Advanced → turn on Developer mode → Create. Paste the address, keep OAuth, and sign in."],
+                ["Claude Code & others", `claude mcp add --transport http zinema-os ${url}`],
               ].map(([t, d], i) => (
                 <li key={t} className="tile p-4">
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0d0d10] text-xs font-semibold text-white">{i + 1}</span>
                   <p className="mt-3 text-sm font-semibold">{t}</p>
-                  <p className={`mt-1 break-words text-xs text-muted ${i === 1 ? "font-mono" : ""}`}>{d}</p>
+                  <p className={`mt-1 break-words text-xs text-muted ${i === 2 ? "font-mono" : ""}`}>{d}</p>
                 </li>
               ))}
             </ol>
@@ -119,7 +119,7 @@ async function Connect() {
                   {driveMode() === "service_account" ? " (service account)" : ""}.
                 </p>
               ) : (
-                <p className="mt-3 text-sm text-muted">{drive.message}. The steps are in the guide under “Google Drive setup”.</p>
+                <p className="mt-3 text-sm text-muted">{drive.message}. Setup steps are in docs/SETUP.md in the repository.</p>
               )}
             </section>
           )}

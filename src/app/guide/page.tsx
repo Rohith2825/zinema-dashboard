@@ -18,7 +18,6 @@ const SECTIONS = [
   ["formats", "Formats & publishing"],
   ["files", "Files & Google Drive"],
   ["ai", "Connect your AI"],
-  ["drive", "Google Drive setup (admins)"],
   ["help", "Help"],
 ] as const;
 
@@ -105,32 +104,30 @@ export default function Guide() {
             </Section>
 
             <Section id="ai" title="Connect your AI">
-              <p>Zinema OS is an MCP server, so your assistant can work the pipeline with you. Server address:</p>
+              <p>Zinema OS is an MCP server, so your assistant can work the pipeline with you. We support <b>Claude</b> and <b>ChatGPT</b>. Server address:</p>
               <p className="well overflow-x-auto p-4 font-mono text-sm">{mcp}</p>
-              <ul className="space-y-3">
-                <li><b>Claude (web, desktop, mobile):</b> Settings → Connectors → Add custom connector → paste the address → sign in with your Zinema Google account.</li>
-                <li><b>Claude Code:</b> <Code>claude mcp add --transport http zinema-os {mcp}</Code></li>
-                <li><b>Anything else:</b> add a remote HTTP MCP server. If it can&apos;t open a sign-in window, create a personal token under <b>Connect AI</b> in the dashboard and send it as <Code>Authorization: Bearer zos_…</Code></li>
-              </ul>
-              <p>Your AI acts as you: same pages, same role, logged as “via AI”. Try “what&apos;s in my queue?”, “show me TAM-0001” or “save this as captions.csv in the song&apos;s Drive folder”.</p>
-            </Section>
-
-            <Section id="drive" title="Google Drive setup (admins)">
-              <p>One-time setup in Google Cloud and Vercel. Pick <b>one</b> of the two routes.</p>
-              <p className="font-semibold text-foreground">Route A — service account + shared drive (best if you have Google Workspace)</p>
-              <ol className="space-y-3">
-                <Step n={1}>Google Cloud → enable the <b>Google Drive API</b> → IAM → Service accounts → create one → Keys → add a JSON key.</Step>
-                <Step n={2}>In Google Drive create a <b>shared drive</b> (e.g. “Zinema OS”), add the service account&apos;s email as <b>Content manager</b>, and add the team.</Step>
-                <Step n={3}>In Vercel add <Code>GOOGLE_SERVICE_ACCOUNT_KEY</Code> (the whole JSON) and <Code>GOOGLE_DRIVE_ROOT_ID</Code> (the id from the shared drive&apos;s URL). Redeploy.</Step>
-              </ol>
-              <p className="well p-4 text-sm">A service account has no storage of its own, so it can&apos;t upload into a personal “My Drive” folder — it must be a shared drive.</p>
-              <p className="font-semibold text-foreground">Route B — a Google account (works with plain Gmail)</p>
-              <ol className="space-y-3">
-                <Step n={1}>Enable the Drive API, then create an OAuth client (type: Web) with redirect URI <Code>https://developers.google.com/oauthplayground</Code>.</Step>
-                <Step n={2}>In the OAuth Playground (gear → use your own credentials) authorise the scope <Code>https://www.googleapis.com/auth/drive</Code> as the account that should own the files, and exchange for a <b>refresh token</b>.</Step>
-                <Step n={3}>In Vercel add <Code>GOOGLE_OAUTH_CLIENT_ID</Code>, <Code>GOOGLE_OAUTH_CLIENT_SECRET</Code>, <Code>GOOGLE_OAUTH_REFRESH_TOKEN</Code> and <Code>GOOGLE_DRIVE_ROOT_ID</Code> (a folder in that account, shared with the team). Redeploy.</Step>
-              </ol>
-              <p>Then open <b>Connect AI</b> in the dashboard: the Google Drive card should say <b>Connected</b>.</p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="tile p-5">
+                  <p className="font-semibold text-foreground">Claude</p>
+                  <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
+                    <li>Open Claude (web, desktop or phone) → <b>Settings → Connectors</b>.</li>
+                    <li>Choose <b>Add custom connector</b>, name it “Zinema OS” and paste the address.</li>
+                    <li>Click <b>Connect</b>, sign in with your Zinema Google account and press <b>Allow access</b>.</li>
+                    <li>In a chat, switch the Zinema OS connector on.</li>
+                  </ol>
+                </div>
+                <div className="tile p-5">
+                  <p className="font-semibold text-foreground">ChatGPT</p>
+                  <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
+                    <li>Open ChatGPT → <b>Settings → Apps &amp; Connectors</b>.</li>
+                    <li>Under <b>Advanced settings</b> turn on <b>Developer mode</b>, then choose <b>Create</b>.</li>
+                    <li>Name it “Zinema OS”, paste the address, keep authentication on <b>OAuth</b> and create it.</li>
+                    <li>Sign in with your Zinema Google account, press <b>Allow access</b>, then pick Zinema OS in a chat.</li>
+                  </ol>
+                </div>
+              </div>
+              <p>Either way the assistant acts as you: same pages, same role, logged as “via AI”. Try “what&apos;s in my queue?”, “show me TAM-0001” or “save this as captions.csv in the song&apos;s Drive folder”.</p>
+              <p className="well p-4 text-sm">Menu names move around between app versions. If you can&apos;t find the screen, or the sign-in loops, write to <Mail /> and we&apos;ll set it up with you.</p>
             </Section>
 
             <Section id="help" title="Help">
