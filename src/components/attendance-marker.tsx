@@ -26,12 +26,22 @@ export function AttendanceMarker({ offices, kind }: { offices: Office[]; kind: "
   const nearest = fix ? offices.map((o) => ({ o, d: metres(fix, o) })).sort((a, b) => a.d - b.d)[0] : null;
   const inRange = Boolean(nearest && nearest.d <= nearest.o.radius_m);
 
-  function locate() {
+  const [locating, setLocating] = useState(false);
+  /** One tap: find where the person is and, if they're in range, go straight to the selfie. */
+  function locate(thenCamera = false) {
     setGeoError(null);
+    setMsg(null);
     if (!navigator.geolocation) return setGeoError("This browser can't share its location.");
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (p) => setFix({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
-      (e) => setGeoError(e.code === e.PERMISSION_DENIED ? "Location is blocked. Allow location for this site in your browser settings, then try again." : "Couldn't get your location. Step near a window or turn on GPS and try again."),
+      (p) => {
+        const next = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
+        setFix(next);
+        setLocating(false);
+        const best = offices.map((o) => ({ o, d: metres(next, o) })).sort((a, b) => a.d - b.d)[0];
+        if (thenCamera && best && best.d <= best.o.radius_m) void openCamera();
+      },
+      (e) => { setLocating(false); setGeoError(e.code === e.PERMISSION_DENIED ? "Location is blocked. Allow location for this site in your browser settings, then try again." : "Couldn't get your location. Step near a window or turn on GPS and try again."); },
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
     );
   }
@@ -101,55 +111,71 @@ export function AttendanceMarker({ offices, kind }: { offices: Office[]; kind: "
     await submit(await stamped(img, img.width, img.height));
   }
 
-  const label = kind === "check_in" ? "Check in" : "Check out";
+  const out = kind === "check_out";
+  const label = out ? "Check out" : "Check in";
+  const started = Boolean(fix) || locating || camera !== "off";
+
   return (
-    <div className="space-y-5">
-      {/* Step 1 — location */}
-      <div className="well p-5">
-        <p className="eyebrow">Step 1 · Where you are</p>
-        {!fix ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={locate} className="btn">Use my location</button>
-            <span className="text-xs text-muted">You need to be within range of an office.</span>
-          </div>
-        ) : (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className={`text-lg font-semibold ${inRange ? "text-emerald-700" : "text-red-600"}`}>
-                {inRange ? "✓ " : ""}{fmtDist(nearest!.d)} from {nearest!.o.name}
-              </p>
-              <p className="font-mono text-[11px] text-muted">{fix.lat.toFixed(5)}, {fix.lng.toFixed(5)} · accurate to ±{Math.round(fix.accuracy)} m</p>
-              {!inRange && <p className="mt-1 text-xs text-red-600">You need to be within {fmtDist(nearest!.o.radius_m)}. Move closer and refresh.</p>}
-            </div>
-            <button type="button" onClick={locate} className="btn-ghost">Refresh</button>
-          </div>
-        )}
-        {geoError && <p className="mt-2 text-xs text-red-600">{geoError}</p>}
-      </div>
+    <div className="space-y-4">
+      {/* The one big button */}
+      {camera !== "on" && (
+        <button
+          type="button"
+          disabled={locating || Boolean(busy)}
+          onClick={() => (inRange ? void openCamera() : locate(true))}
+          className={`flex w-full items-center justify-center gap-3 rounded-3xl px-6 py-6 text-xl font-bold transition disabled:opacity-70 ${
+            out ? "bg-[#0d0d10] text-white shadow-[0_18px_36px_-16px_rgba(0,0,0,0.7)]" : "bg-gradient-to-b from-[#ff9234] to-[#fc7c0f] text-[#140a00] shadow-[0_18px_36px_-14px_rgba(252,124,15,0.9)]"
+          }`}
+        >
+          {locating || busy ? <span className="eq-loader" aria-hidden="true"><i /><i /><i /><i /></span> : (
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              {out ? <path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h9" /> : <path d="M9 4H5v16h4M14 8l4 4-4 4M18 12H9" />}
+            </svg>
+          )}
+          {locating ? "Finding your location…" : (busy ?? label)}
+        </button>
+      )}
+      {!started && <p className="text-center text-xs text-muted">One tap: we check you&apos;re at the office, then take a quick selfie.</p>}
 
-      {/* Step 2 — selfie */}
-      <div className={`well p-5 ${inRange ? "" : "pointer-events-none opacity-50"}`}>
-        <p className="eyebrow">Step 2 · Selfie</p>
-        {camera === "on" ? (
-          <div className="mt-3 space-y-3">
-            <video ref={video} autoPlay playsInline muted className="aspect-[4/3] w-full max-w-md -scale-x-100 rounded-2xl bg-black object-cover" />
-            <button type="button" disabled={Boolean(busy)} onClick={capture} className="btn w-full max-w-md !py-3">{busy ?? `Take selfie & ${label.toLowerCase()}`}</button>
-          </div>
-        ) : (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button type="button" disabled={!inRange || Boolean(busy)} onClick={openCamera} className="btn-dark">Open camera</button>
-            <label className="btn-ghost cursor-pointer">
-              {busy ?? "Use phone camera"}
-              <input type="file" accept="image/*" capture="user" className="hidden" disabled={!inRange || Boolean(busy)} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void fromFile(f); }} />
-            </label>
-            {camera === "blocked" && <span className="text-xs text-red-600">Camera is blocked. Allow it in the browser, or use “Use phone camera”.</span>}
-          </div>
-        )}
-        <p className="mt-3 text-xs text-muted">The photo is stamped with the time and your location and saved privately. Only you and the owners can see it.</p>
-      </div>
+      {/* Where you are */}
+      {fix && nearest && (
+        <div className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm ${inRange ? "bg-emerald-500/10 text-emerald-800" : "bg-red-500/10 text-red-700"}`}>
+          <span>
+            <b>{inRange ? "✓ You're at " : "Too far from "}{nearest.o.name}</b>
+            <span className="ml-1 opacity-80">· {fmtDist(nearest.d)} away{inRange ? "" : `, needs to be within ${fmtDist(nearest.o.radius_m)}`}</span>
+          </span>
+          {!inRange && <button type="button" onClick={() => locate(true)} className="btn-ghost !py-1 text-xs">Try again</button>}
+        </div>
+      )}
+      {geoError && <p className="rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-700">{geoError}</p>}
 
-      {msg?.error && <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-700">{msg.error}</p>}
-      {msg?.ok && <p className="rounded-xl bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-800">{msg.ok}</p>}
+      {/* Selfie */}
+      {camera === "on" && (
+        <div className="space-y-3">
+          <video ref={video} autoPlay playsInline muted className="aspect-[4/3] w-full -scale-x-100 rounded-3xl bg-black object-cover" />
+          <button
+            type="button"
+            disabled={Boolean(busy)}
+            onClick={capture}
+            className={`flex w-full items-center justify-center gap-3 rounded-3xl px-6 py-5 text-lg font-bold disabled:opacity-70 ${out ? "bg-[#0d0d10] text-white" : "bg-gradient-to-b from-[#ff9234] to-[#fc7c0f] text-[#140a00]"}`}
+          >
+            {busy ?? `Take selfie & ${label.toLowerCase()}`}
+          </button>
+        </div>
+      )}
+      {camera === "blocked" && inRange && (
+        <div className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-900">
+          The camera is blocked in this browser.
+          <label className="btn-ghost ml-2 cursor-pointer !py-1 text-xs">
+            {busy ?? "Use phone camera"}
+            <input type="file" accept="image/*" capture="user" className="hidden" disabled={Boolean(busy)} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void fromFile(f); }} />
+          </label>
+        </div>
+      )}
+
+      {msg?.error && <p className="rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-700">{msg.error}</p>}
+      {msg?.ok && <p className="rounded-2xl bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-800">{msg.ok}</p>}
+      {started && <p className="text-center text-[11px] text-muted">Your photo is stamped with the time and place and saved privately. Only you and the owners can see it.</p>}
     </div>
   );
 }

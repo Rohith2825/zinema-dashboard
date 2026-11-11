@@ -58,7 +58,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
 
   return (
     <>
-      <PageTitle title="Attendance" sub="Mark your day from the office: your location is checked, and a time-stamped selfie is saved as proof." />
+      <PageTitle title="Attendance" sub="Check in when you arrive and check out when you leave. One tap, plus a quick selfie." />
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-8">
@@ -68,10 +68,15 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
               <div>
                 <p className="eyebrow">Today · {fmtDate(new Date().toISOString(), { weekday: "long", day: "numeric", month: "long" })}</p>
                 <h2 className="mt-1 text-2xl font-semibold">
-                  {!iAmRequired ? "Attendance isn't required for you" : checkOut ? "Day complete" : checkIn ? "You're checked in" : "Not checked in yet"}
+                  {!iAmRequired ? "Attendance isn't required for you" : checkOut ? "Checked out. See you tomorrow" : checkIn ? `Checked in at ${time(checkIn.at)}` : "Check in to start your day"}
                 </h2>
               </div>
-              {checkIn && <Badge tone="green">In {time(checkIn.at)}{checkOut ? ` · Out ${time(checkOut.at)}` : ""}</Badge>}
+              {iAmRequired && (
+                <ol className="flex items-center gap-2 text-xs font-medium">
+                  <li className={`rounded-full px-3 py-1.5 ${checkIn ? "bg-emerald-500/15 text-emerald-800" : "bg-brand-500 text-black"}`}>{checkIn ? `✓ Check in · ${time(checkIn.at)}` : "1 · Check in"}</li>
+                  <li className={`rounded-full px-3 py-1.5 ${checkOut ? "bg-emerald-500/15 text-emerald-800" : checkIn ? "bg-[#0d0d10] text-white" : "bg-black/[0.05] text-muted"}`}>{checkOut ? `✓ Check out · ${time(checkOut.at)}` : "2 · Check out"}</li>
+                </ol>
+              )}
             </div>
 
             {iAmRequired && checkIn && (
@@ -90,7 +95,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
             )}
 
             {iAmRequired && !checkOut && (
-              <div className="mt-6">
+              <div className="mx-auto mt-6 max-w-xl">
                 {activeOffices.length === 0 ? (
                   <Empty>No office locations have been added yet. Ask an owner to add one.</Empty>
                 ) : (
