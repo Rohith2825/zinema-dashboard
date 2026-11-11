@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { SITE_URL } from "@/lib/site";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
+const geistSans = DM_Sans({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
