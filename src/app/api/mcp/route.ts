@@ -16,7 +16,7 @@ const CORS = {
 };
 const INSTRUCTIONS = `Zinema OS is Zinema Music's song pipeline: lyrics → music → master_qc → distribution → video → promo → posting → live.
 Start with whoami. Songs are addressed by code (TAM-0007). get_song returns the ids you need for formats, checklist items and file versions.
-Rules the server enforces: makers submit files, a different person (checker/approver) reviews them, only approvers advance a stage, and every song needs 3 carousels + 3 verticals. If a tool says you lack permission, tell the user rather than trying another route.
+Rules the server enforces: the core team submits files, a different core member or an admin checks them (never your own), only admins and owners advance a stage, and every song needs 3 carousels + 3 verticals. If a tool says you lack permission, tell the user rather than trying another route.
 Files live in Google Drive: use save_to_drive to file anything you produce into the song's folder. Dates are India time.`;
 
 type Rpc = { jsonrpc: "2.0"; id?: string | number | null; method: string; params?: Record<string, unknown> };
@@ -68,7 +68,16 @@ export async function POST(request: Request) {
           ok(msg.id, {
             protocolVersion: PROTOCOLS.includes(asked) ? asked : PROTOCOLS[0],
             capabilities: { tools: { listChanged: false } },
-            serverInfo: { name: "zinema-os", title: "Zinema OS", version: "1.0.0" },
+            serverInfo: {
+              name: "zinema-os",
+              title: "Zinema OS",
+              version: "1.1.0",
+              websiteUrl: SITE_URL,
+              icons: [
+                { src: `${SITE_URL}/icon.png`, mimeType: "image/png", sizes: ["512x512"] },
+                { src: `${SITE_URL}/apple-icon.png`, mimeType: "image/png", sizes: ["180x180"] },
+              ],
+            },
             instructions: INSTRUCTIONS,
           }),
         );

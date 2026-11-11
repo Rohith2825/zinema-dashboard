@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { revokeMcpToken } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
 import { ListSkeleton } from "@/components/skeletons";
+import { ConnectGuides } from "@/components/connect-guides";
+import { BrandIcon, type Brand } from "@/components/landing/logos";
 import { CopyBox, TokenForm } from "@/components/token-form";
 import { Badge, PageTitle } from "@/components/ui";
 import { driveIdentity, driveMode, driveStatus } from "@/lib/google-drive";
@@ -36,7 +38,7 @@ async function Connect() {
     <>
       <PageTitle
         title="Connect your AI"
-        sub="Zinema OS is also an MCP server. Plug in Claude or ChatGPT and it can read the pipeline, move work forward and file what it makes into Google Drive, with exactly your permissions."
+        sub="Zinema OS is also an MCP server. Plug in Claude, ChatGPT or another assistant and it can read the pipeline, move work forward and file what it makes into Google Drive, with exactly your permissions."
       />
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-8 xl:grid-cols-[minmax(0,1fr)_400px]">
@@ -44,19 +46,19 @@ async function Connect() {
           <section className="card p-5 md:p-7">
             <p className="eyebrow">Server address</p>
             <div className="mt-3"><CopyBox value={url} label="Copy URL" /></div>
-            <ol className="mt-6 grid gap-4 md:grid-cols-3">
-              {[
-                ["Claude", "Settings → Connectors → Add custom connector. Paste the address, connect, and sign in with your Zinema Google account."],
-                ["ChatGPT", "Settings → Apps & Connectors → Advanced → turn on Developer mode → Create. Paste the address, keep OAuth, and sign in."],
-                ["Claude Code & others", `claude mcp add --transport http zinema-os ${url}`],
-              ].map(([t, d], i) => (
-                <li key={t} className="tile min-w-0 p-4">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0d0d10] text-xs font-semibold text-white">{i + 1}</span>
-                  <p className="mt-3 text-sm font-semibold">{t}</p>
-                  <p className={`mt-1 break-all text-xs text-muted ${i === 2 ? "font-mono" : ""}`}>{d}</p>
-                </li>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted">
+              Works with
+              {(["claude", "chatgpt", "claudecode", "cursor", "windsurf", "gemini"] as Brand[]).map((b) => (
+                <span key={b} className="tile flex h-9 w-9 items-center justify-center !rounded-xl" title={b}><BrandIcon name={b} size={18} /></span>
               ))}
-            </ol>
+              <span>and anything else that speaks MCP.</span>
+            </div>
+          </section>
+
+          <section className="card p-5 md:p-7">
+            <p className="eyebrow">Step by step</p>
+            <h2 className="mb-5 mt-1 text-lg font-semibold">Pick your assistant</h2>
+            <ConnectGuides url={url} />
           </section>
 
           <section className="card p-5 md:p-7">
