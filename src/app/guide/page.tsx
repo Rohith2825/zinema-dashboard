@@ -17,6 +17,7 @@ const SECTIONS = [
   ["pipeline", "How a song moves"],
   ["formats", "Formats & publishing"],
   ["files", "Files & Google Drive"],
+  ["attendance", "Attendance"],
   ["ai", "Connect your AI"],
   ["help", "Help"],
 ] as const;
@@ -101,6 +102,16 @@ export default function Guide() {
             <Section id="files" title="Files & Google Drive">
               <p>Google Drive is the single home for files. Zinema OS keeps it tidy: <Code>Zinema OS / Page / CODE · Title / Stage</Code>.</p>
               <p>Use <b>Upload to Drive &amp; submit</b> on any item: the file goes straight from your browser to the right folder (large WAV and video files are fine) and is sent for checking in one step. You can still paste a Drive link if the file is already there.</p>
+            </Section>
+
+            <Section id="attendance" title="Attendance">
+              <p>If an owner has switched attendance on for you, <b>Attendance</b> appears as your daily check-in.</p>
+              <ol className="space-y-4">
+                <Step n={1}>Open <b>Attendance</b> at the office and press <b>Use my location</b>. You need to be within the office&apos;s range (usually 1 km).</Step>
+                <Step n={2}>Take a selfie. It&apos;s stamped with the time and your location and saved privately — only you and the owners can see it.</Step>
+                <Step n={3}>Check out the same way when you leave.</Step>
+              </ol>
+              <p className="well p-4 text-sm">Allow location and camera for this site when your browser asks. On a phone, turn on precise location for the best result.</p>
             </Section>
 
             <Section id="ai" title="Connect your AI">

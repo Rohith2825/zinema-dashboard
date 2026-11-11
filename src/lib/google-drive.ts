@@ -209,3 +209,17 @@ export async function driveStatus(): Promise<{ ok: boolean; message: string; roo
     return { ok: false, message: e instanceof Error ? e.message : "Drive check failed" };
   }
 }
+
+/** Private attendance folder, outside the team-shared root: <Attendance> / <Person> / <YYYY-MM>. */
+export async function attendanceFolder(person: { full_name?: string | null; email: string }, month: string): Promise<string> {
+  const top = process.env.GOOGLE_DRIVE_ATTENDANCE_ID ?? (await ensureFolder("Zinema OS Attendance (private)", "root"));
+  const who = await ensureFolder(`${person.full_name || person.email.split("@")[0]} (${person.email})`, top);
+  return ensureFolder(month, who);
+}
+
+/** Streams a file's bytes (used to show attendance selfies without sharing them). */
+export async function downloadFile(id: string): Promise<Response> {
+  const res = await fetch(`${API}/files/${id}?alt=media&${ALL}`, { headers: { Authorization: `Bearer ${await accessToken()}` }, cache: "no-store" });
+  if (!res.ok) throw new DriveError("Couldn't load the file from Drive.");
+  return res;
+}
