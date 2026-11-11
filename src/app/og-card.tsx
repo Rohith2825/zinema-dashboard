@@ -91,8 +91,8 @@ export async function ogCard() {
         <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", marginTop: -70 }}>
           {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
           <img src={src} width={600} height={220} />
-          <div style={{ display: "flex", marginTop: 34, fontSize: 22, letterSpacing: 9, color: "#c4c4c4" }}>
-            ZINEMA<span style={{ color: ORANGE, marginLeft: 14, fontWeight: 700 }}>OS</span>
+          <div style={{ display: "flex", marginTop: 34, fontSize: 26, letterSpacing: 9, color: "#f5f5f5", fontWeight: 800 }}>
+            ZINEMA<span style={{ color: ORANGE, marginLeft: 14, fontWeight: 900 }}>OS</span>
           </div>
           <div style={{ display: "flex", marginTop: 18, fontSize: 22, color: "#8a8a8a" }}>
             {PAGES.map((p, i) => (

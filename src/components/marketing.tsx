@@ -7,7 +7,7 @@ export function PublicHeader() {
       <Link href="/" className="flex items-end gap-2" aria-label="Zinema OS">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/zinema-wordmark.png" alt="Zinema Music" width={100} height={24} />
-        <span className="pb-0.5 text-[10px] font-semibold tracking-[0.3em] text-brand-500">OS</span>
+        <span className="text-xl font-black leading-none tracking-tight text-brand-500">OS</span>
       </Link>
       <nav className="hidden items-center gap-7 md:flex">
         <Link href="/#platform" className="hover:text-white">Platform</Link>

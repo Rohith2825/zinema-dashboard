@@ -110,12 +110,13 @@
 
 .zl-kicker {
   margin-top: 28px;
-  font-size: 11px;
-  letter-spacing: 0.32em;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: #a3a3a3;
+  color: #f5f5f5;
 }
-.zl-kicker b { color: var(--accent); font-weight: 600; }
+.zl-kicker b { color: var(--accent); font-weight: 900; }
 
 .zl-google {
   display: flex;

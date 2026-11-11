@@ -20,7 +20,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <Link href="/board" className="flex items-end gap-2" aria-label="Zinema OS home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/zinema-wordmark.png" alt="Zinema Music" width={116} height={28} />
-            <span className="pb-0.5 text-[10px] font-semibold tracking-[0.3em] text-brand-500">OS</span>
+            <span className="text-xl font-black leading-none tracking-tight text-brand-500">OS</span>
           </Link>
         </div>
         <div className="overflow-x-auto px-3 pb-3 md:flex-1 md:overflow-y-auto md:pb-0">
