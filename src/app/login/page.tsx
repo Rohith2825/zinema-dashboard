@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Link from "next/link";
 import { GoogleButton } from "./google-button";
 import "./login.css";
 
@@ -53,12 +54,14 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 
       <div className="zl-stack">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="zl-logo" src="/brand/zinema-logo.png" alt="Zinema Music — It Just Hits" width={1000} height={366} />
+        <img className="zl-logo" src="/brand/zinema-logo-ink.png" alt="Zinema Music — It Just Hits" width={1000} height={366} />
         <h1 className="zl-kicker">Zinema <b>OS</b></h1>
+        <p className="zl-sub">Sign in with your Zinema Google account.</p>
         <Suspense fallback={<GoogleButton className="zl-google" />}>
           <LoginForm searchParams={searchParams} />
         </Suspense>
         <p className="zl-pages">{PAGES.map((p) => <span key={p}>{p}</span>)}</p>
+        <p className="zl-links"><Link href="/">About Zinema OS</Link><Link href="/guide">Guide</Link><a href="mailto:info@zinema.music">Help</a></p>
       </div>
     </main>
   );

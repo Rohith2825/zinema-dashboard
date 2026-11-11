@@ -237,3 +237,10 @@ a[data-nav-pending] {
 @media (prefers-reduced-motion: reduce) { .mk-bar, .mk-flow { animation: none; } }
 html { scroll-behavior: smooth; scroll-padding-top: 6rem; }
 dialog.stage-dialog[open] { animation: nav-pop 0.2s ease-out; }
+.lb-pop { animation: lb-pop 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3); }
+.lb-fade { animation: lb-fade 0.45s ease-out; }
+@keyframes lb-pop { from { opacity: 0; transform: translateX(-18px) scale(0.9); } }
+@keyframes lb-fade { from { opacity: 0; transform: translateY(6px); } }
+.pl-dash { stroke-dasharray: 6 8; animation: pl-dash 1.2s linear infinite; }
+@keyframes pl-dash { to { stroke-dashoffset: -14; } }
+@media (prefers-reduced-motion: reduce) { .lb-pop, .lb-fade, .pl-dash { animation: none; } }

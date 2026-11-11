@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Eq, PublicFooter, PublicHeader } from "@/components/marketing";
-import { STAGES } from "@/lib/types";
+import { AiTabs } from "@/components/landing/ai-tabs";
+import { LiveBoard } from "@/components/landing/live-board";
+import { BrandIcon, type Brand } from "@/components/landing/logos";
+import { SONGS } from "@/components/landing/songs";
 
 export const metadata: Metadata = {
   title: { absolute: "Zinema OS — every song, from first lyric to live" },
@@ -15,45 +18,58 @@ const Sq = () => <span aria-hidden="true" className="inline-block h-2 w-2 shrink
 
 /* ───────── Illustrations (pure markup, no images) ───────── */
 
-function BoardArt() {
-  const cols: [string, [string, string, number][]][] = [
-    ["Lyrics", [["TAM-0008", "#fc7c0f", 40]]],
-    ["Mix & Master", [["HIN-0007", "#e11d48", 70], ["SPI-0011", "#a855f7", 20]]],
-    ["Video", [["TAM-0007", "#fc7c0f", 55]]],
-    ["Live", [["SPI-0010", "#a855f7", 100], ["HIN-0006", "#e11d48", 100]]],
-  ];
+const O = "#fc7c0f";
+const K = "#0d0d10";
+/** Small abstract drawing per stage. */
+const STAGE_ART: Record<string, React.ReactNode> = {
+  lyrics: <>{[10, 22, 34, 46].map((y, i) => <rect key={y} x="14" y={y} width={[70, 92, 56, 80][i]} height="5" rx="2.5" fill={i === 1 ? O : K} opacity={i === 1 ? 1 : 0.18} />)}</>,
+  music: <>{[18, 34, 52, 30, 60, 44, 26, 48, 36, 20, 42, 28].map((h, i) => <rect key={i} x={12 + i * 8.5} y={32 - h / 2} width="5" height={h} rx="2.5" fill={i === 4 || i === 5 ? O : K} opacity={i === 4 || i === 5 ? 1 : 0.2} />)}</>,
+  master_qc: <><path d="M20 52a40 40 0 0180 0" fill="none" stroke={K} strokeOpacity=".15" strokeWidth="8" strokeLinecap="round" /><path d="M20 52a40 40 0 0162-33" fill="none" stroke={O} strokeWidth="8" strokeLinecap="round" /><path d="M60 52l20-26" stroke={K} strokeWidth="3" strokeLinecap="round" /><circle cx="60" cy="52" r="5" fill={K} /></>,
+  distribution: <>{[3, 1.5, 4, 2, 1.5, 5, 2, 3, 1.5, 4, 2, 3, 1.5, 5].reduce<{ x: number; els: React.ReactNode[] }>((a, w, i) => ({ x: a.x + w + 3, els: [...a.els, <rect key={i} x={a.x} y="12" width={w} height="34" fill={i === 5 ? O : K} opacity={i === 5 ? 1 : 0.75} />] }), { x: 22, els: [] }).els}<rect x="22" y="50" width="76" height="4" rx="2" fill={K} opacity=".15" /></>,
+  video: <><rect x="20" y="10" width="80" height="44" rx="8" fill={K} /><path d="M54 22l16 10-16 10z" fill={O} /><rect x="26" y="46" width="68" height="3" rx="1.5" fill="#fff" opacity=".25" /><rect x="26" y="46" width="30" height="3" rx="1.5" fill={O} /></>,
+  promo: <>{[0, 1, 2].map((i) => <rect key={i} x={14 + i * 17} y="14" width="13" height="36" rx="3" fill={O} opacity={1 - i * 0.25} />)}{[0, 1, 2].map((i) => <rect key={i} x={70 + i * 13} y={20 + i * 3} width="22" height="22" rx="4" fill={K} opacity={0.85 - i * 0.25} />)}</>,
+  posting: <><path d="M30 32h28M58 32l26-16M58 32l26 16" stroke={K} strokeOpacity=".25" strokeWidth="3" /><circle cx="30" cy="32" r="9" fill={K} /><circle cx="58" cy="32" r="6" fill={O} /><circle cx="88" cy="14" r="7" fill={K} opacity=".8" /><circle cx="88" cy="50" r="7" fill={K} opacity=".8" /></>,
+  live: <><circle cx="60" cy="32" r="26" fill="none" stroke={O} strokeOpacity=".25" strokeWidth="3" /><circle cx="60" cy="32" r="17" fill="none" stroke={O} strokeOpacity=".55" strokeWidth="3" /><circle cx="60" cy="32" r="8" fill={O} /></>,
+};
+
+const PIPELINE: { key: string; label: string; needs: string[]; check: string }[] = [
+  { key: "lyrics", label: "Lyrics", needs: ["Final lyrics", "Sound brief"], check: "Hook, meaning and language reviewed" },
+  { key: "music", label: "Music", needs: ["Rough mix", "Song metadata"], check: "Arrangement and credits confirmed" },
+  { key: "master_qc", label: "Mix & Master", needs: ["Master WAV", "Artwork", "Stems (optional)"], check: "Loudness, true peak and artwork spec audited" },
+  { key: "distribution", label: "Distribution", needs: ["ISRC and UPC", "Catalog number", "Release date"], check: "Upload to the distributor recorded with proof" },
+  { key: "video", label: "Video", needs: ["Lyric video, visualizer, music video or AI video"], check: "At least one video approved" },
+  { key: "promo", label: "Promo", needs: ["3 carousels", "3 verticals"], check: "All six approved, each with its checklist" },
+  { key: "posting", label: "Posting", needs: ["Post links per platform", "Cross-post sign-off"], check: "Every format marked published" },
+  { key: "live", label: "Live", needs: ["On Spotify and stores", "New formats any time after"], check: "The song keeps earning attention" },
+];
+
+function PipelineArt() {
   return (
-    <div className="card relative mx-auto max-w-4xl p-3 !shadow-raise-lg md:p-5" aria-hidden="true">
-      <div className="mb-3 flex items-center gap-1.5 px-1">
-        <i className="h-2.5 w-2.5 rounded-full bg-brand-500" /><i className="h-2.5 w-2.5 rounded-full bg-black/10" /><i className="h-2.5 w-2.5 rounded-full bg-black/10" />
-        <span className="ml-3 text-[11px] font-medium text-muted">Song board</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-4">
-        {cols.map(([label, cards]) => (
-          <div key={label} className="well min-h-32 p-2.5 md:min-h-44">
-            <p className="eyebrow mb-2 px-1 !text-[9px]">{label}</p>
-            <div className="space-y-2">
-              {cards.map(([code, colour, pct]) => (
-                <div key={code} className="tile !rounded-xl px-2.5 py-2">
-                  <p className="flex items-center gap-1.5 font-mono text-[9px] text-muted"><i className="h-1.5 w-1.5 rounded-full" style={{ background: colour }} />{code}</p>
-                  <div className="mt-1.5 h-1.5 w-3/4 rounded-full bg-black/10" />
-                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-black/[0.07]"><div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} /></div>
-                </div>
-              ))}
-            </div>
+    <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {PIPELINE.map((st, i) => (
+        <li key={st.key} className="card relative flex flex-col p-5">
+          <div className="flex items-center justify-between">
+            <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${i === 7 ? "bg-brand-500 text-black" : "bg-[#0d0d10] text-white"}`}>{i + 1}</span>
+            {i < 7 && (
+              <svg width="44" height="10" viewBox="0 0 44 10" aria-hidden="true" className="text-brand-500">
+                <path className="pl-dash" d="M0 5h36" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
+                <path d="M36 1l6 4-6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            )}
           </div>
-        ))}
-      </div>
-      {/* Floating notes */}
-      <div className="tile absolute -left-3 bottom-10 hidden items-center gap-3 px-4 py-3 md:flex lg:-left-10">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700">✓</span>
-        <span className="text-xs"><b className="block">Master approved</b><span className="text-muted">by the checker · just now</span></span>
-      </div>
-      <div className="absolute -right-3 top-16 hidden items-center gap-3 rounded-2xl bg-[#0b0b0d] px-4 py-3 text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.6)] md:flex lg:-right-10">
-        <span className="eq-loader" aria-hidden="true"><i /><i /><i /><i /></span>
-        <span className="text-xs"><b className="block">SPI-0010 is live</b><span className="text-neutral-400">Spotify · YouTube · Instagram</span></span>
-      </div>
-    </div>
+          <div className="well my-4 flex items-center justify-center !rounded-2xl py-3">
+            <svg viewBox="0 0 120 64" className="h-16 w-full max-w-[150px]" aria-hidden="true">{STAGE_ART[st.key]}</svg>
+          </div>
+          <h3 className="text-lg font-semibold">{st.label}</h3>
+          <ul className="mt-2 flex-1 space-y-1 text-sm text-zinc-700">
+            {st.needs.map((n) => <li key={n} className="flex gap-2"><span className="mt-[7px] h-1.5 w-1.5 shrink-0 bg-brand-500" />{n}</li>)}
+          </ul>
+          <p className="mt-4 flex gap-2 border-t border-black/[0.06] pt-3 text-xs text-muted">
+            <span className="font-semibold text-emerald-700">✓</span>{st.check}
+          </p>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -72,21 +88,24 @@ function FlowArt() {
 }
 
 function FormatsArt() {
-  const covers = ["#fc7c0f", "#e11d48", "#a855f7"];
-  const formats = [["Vertical", "live"], ["Carousel", "live"], ["Lyric video", "in review"], ["Music video", "planned"]];
+  const picks = SONGS.slice(0, 3);
+  const formats: [string, string, Brand | null][] = [["Audio", "live", "spotify"], ["Vertical 1", "live", "instagram"], ["Lyric video", "in review", "youtube"], ["Flagship music video", "planned", null]];
   return (
-    <div className="well grid gap-4 p-5 sm:grid-cols-[auto_1fr] md:p-7" aria-hidden="true">
-      <div className="flex gap-3 sm:flex-col">
-        {covers.map((c, i) => (
-          <div key={c} className="flex h-20 w-20 items-end gap-[3px] rounded-2xl p-2.5 shadow-raise-sm" style={{ background: `radial-gradient(circle at 75% 20%, ${c}66, transparent 60%), #0a0a0a` }}>
-            {[40, 75, 55, 90, 35, 65, 50].map((h, j) => <i key={j} className="flex-1 rounded-t-sm" style={{ height: `${(h + i * 13) % 90 + 10}%`, background: c }} />)}
-          </div>
+    <div className="well p-5 md:p-7">
+      <div className="flex items-end justify-center">
+        {picks.map((s, i) => (
+          <a key={s.code} href={s.url} target="_blank" rel="noreferrer" title={`${s.title} on Spotify`} aria-label={`${s.title} on Spotify`} className={`block overflow-hidden rounded-2xl shadow-raise transition hover:-translate-y-1 ${i === 1 ? "z-10 w-36 md:w-44" : "w-28 opacity-90 md:w-32"} ${i === 0 ? "-mr-5 -rotate-6" : i === 2 ? "-ml-5 rotate-6" : ""}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={s.cover} alt="" loading="lazy" className="aspect-square w-full bg-[#0d0d10] object-cover" />
+          </a>
         ))}
       </div>
-      <div className="space-y-2.5">
-        {formats.map(([name, state]) => (
-          <div key={name} className="tile flex items-center justify-between px-4 py-3 text-sm">
-            <span className="font-medium">{name}</span>
+      <p className="mt-4 text-center text-sm font-semibold">{picks[1].title} <span className="ml-1 font-mono text-xs font-normal text-muted">{picks[1].code}</span></p>
+      <div className="mt-4 space-y-2.5" aria-hidden="true">
+        {formats.map(([name, state, brand]) => (
+          <div key={name} className="tile flex items-center gap-3 px-4 py-3 text-sm">
+            <span className="flex-1 font-medium">{name}</span>
+            {brand && <BrandIcon name={brand} size={16} />}
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${state === "live" ? "bg-brand-500 text-black" : state === "planned" ? "bg-black/[0.06] text-zinc-600" : "bg-sky-500/15 text-sky-800"}`}>{state}</span>
           </div>
         ))}
@@ -105,21 +124,6 @@ function DriveArt() {
           <span className={hot ? "font-semibold" : ""}>{name}</span>
         </div>
       ))}
-    </div>
-  );
-}
-
-function ChatArt() {
-  return (
-    <div className="rounded-[28px] bg-[#0b0b0d] p-5 text-[13px] leading-relaxed text-neutral-300 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.7)] md:p-7" aria-hidden="true">
-      <div className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-white/10 px-4 py-2.5 text-white">What&apos;s blocking TAM-0007 from distribution?</div>
-      <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-500/15 px-3 py-1 font-mono text-[11px] text-brand-400"><Sq />zinema-os · get_song</p>
-      <div className="mt-3 w-fit max-w-[90%] rounded-2xl rounded-bl-md bg-white/[0.06] px-4 py-2.5">The master is approved. The artwork has been waiting for a checker since Tuesday — shall I assign it and nudge them?</div>
-      <div className="ml-auto mt-4 w-fit rounded-2xl rounded-br-md bg-white/10 px-4 py-2.5 text-white">Yes, and save the captions to Drive.</div>
-      <p className="mt-4 flex flex-wrap gap-2 font-mono text-[11px] text-brand-400">
-        <span className="inline-flex items-center gap-2 rounded-full bg-brand-500/15 px-3 py-1"><Sq />create_task</span>
-        <span className="inline-flex items-center gap-2 rounded-full bg-brand-500/15 px-3 py-1"><Sq />save_to_drive</span>
-      </p>
     </div>
   );
 }
@@ -174,13 +178,23 @@ export default function Landing() {
           <Link href="/guide" className="btn-ghost !rounded-full !px-7 !py-3 !text-base">Read the guide</Link>
         </div>
         <p className="mt-5 text-xs text-muted">Tamil · Hindi · Marathi · Spiritual · Community</p>
-        <div className="mt-14 md:mt-20"><BoardArt /></div>
+        <div className="mt-14 md:mt-20"><LiveBoard /></div>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-muted">
+          <span className="eyebrow">Works with</span>
+          {(["claude", "chatgpt", "gemini", "drive", "spotify"] as Brand[]).map((b) => (
+            <span key={b} className="flex items-center gap-2 font-medium text-zinc-700">
+              <BrandIcon name={b} size={20} />
+              {{ claude: "Claude", chatgpt: "ChatGPT", gemini: "Gemini", drive: "Google Drive", spotify: "Spotify" }[b as "claude"]}
+              {b === "gemini" && <span className="rounded-full bg-black/[0.06] px-1.5 py-0.5 text-[10px] font-normal text-muted">soon</span>}
+            </span>
+          ))}
+        </div>
       </section>
 
       {/* Numbers */}
       <section className={`${W} mt-16 md:mt-24`}>
         <dl className="card grid grid-cols-2 gap-y-8 px-6 py-8 text-center md:grid-cols-4 md:py-10">
-          {[["8", "stages, one direction"], ["5", "pages, one team"], ["3 + 3", "carousels & verticals per song"], ["2", "AIs supported: Claude & ChatGPT"]].map(([n, l]) => (
+          {[["8", "stages, one direction"], ["5", "pages, one team"], ["3 + 3", "carousels & verticals per song"], ["21", "songs released so far"]].map(([n, l]) => (
             <div key={l}>
               <dt className="text-3xl font-semibold tracking-tight md:text-5xl">{n}</dt>
               <dd className="mx-auto mt-2 max-w-[11rem] text-xs text-muted md:text-sm">{l}</dd>
@@ -193,20 +207,8 @@ export default function Landing() {
       <section id="platform" className={`${W} mt-24 md:mt-36`}>
         <p className="eyebrow">The pipeline</p>
         <h2 className="mt-3 max-w-2xl text-3xl font-semibold md:text-5xl">Eight stages. One direction. No guessing.</h2>
-        <div className="card mt-10 px-4 py-8 md:px-10 md:py-10">
-          <div className="relative">
-            <div className="well absolute left-0 right-0 top-[13px] hidden h-1.5 !rounded-full md:block" />
-            <span className="mk-flow absolute top-[9px] hidden h-3.5 w-3.5 -translate-x-1/2 rounded-full bg-brand-500 shadow-[0_0_14px_#fc7c0f] md:block" />
-            <ol className="relative grid grid-cols-4 gap-y-6 md:grid-cols-8">
-              {STAGES.map((st, i) => (
-                <li key={st.key} className="flex flex-col items-center text-center">
-                  <span className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold ${i === 7 ? "bg-brand-500 text-black shadow-[0_6px_14px_-4px_rgba(252,124,15,0.8)]" : "tile"}`}>{i + 1}</span>
-                  <span className="mt-3 text-[11px] font-medium md:text-sm">{st.label}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
+        <p className="mt-4 max-w-2xl text-muted md:text-lg">Each stage has things that must exist and a check that must pass. Nothing is skipped: the song only moves when an approver signs off.</p>
+        <PipelineArt />
       </section>
 
       {/* Feature rows */}
@@ -229,6 +231,7 @@ export default function Landing() {
         <div className="md:order-2">
           <p className="eyebrow">Bring your own AI</p>
           <h2 className="mt-3 text-3xl font-semibold md:text-[2.75rem] md:leading-[1.08]">Claude and ChatGPT, on the team.</h2>
+          <div className="mt-5 flex gap-3">{(["claude", "chatgpt", "gemini"] as Brand[]).map((b) => <span key={b} className="tile flex h-12 w-12 items-center justify-center !rounded-2xl"><BrandIcon name={b} size={24} /></span>)}</div>
           <p className="mt-5 text-muted md:text-lg">
             Zinema OS speaks MCP. Connect your assistant and ask “what&apos;s waiting on me?”, “plan the verticals for TAM-0007” or “save this caption sheet to the song&apos;s folder”.
           </p>
@@ -237,7 +240,7 @@ export default function Landing() {
           </ul>
           <Link href="/guide#ai" className="btn-dark mt-8 !rounded-full !px-6 !py-2.5">How to connect</Link>
         </div>
-        <ChatArt />
+        <AiTabs />
       </section>
 
       {/* Everyday */}
