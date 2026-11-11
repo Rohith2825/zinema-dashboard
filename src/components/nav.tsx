@@ -26,7 +26,7 @@ export const GROUPS = [
       { href: "/attendance", label: "Attendance", icon: "M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" },
       { href: "/team", label: "Team", icon: "M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 010 6M18 15c2 .6 3 2.300 3 5" },
       { href: "/connect", label: "Connect AI", icon: "M9 3v5M15 3v5M7 8h10v4a5 5 0 01-10 0zM12 17v4" },
-      { href: "/guide", label: "Guide", icon: "M5 4h10a3 3 0 013 3v13H8a3 3 0 01-3-3zM5 17a3 3 0 013-3h10" },
+      { href: "/help", label: "Guide", icon: "M5 4h10a3 3 0 013 3v13H8a3 3 0 01-3-3zM5 17a3 3 0 013-3h10" },
     ],
   },
 ];

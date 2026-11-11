@@ -60,7 +60,7 @@ export function UserMenu({ me }: { me: Me }) {
               </ul>
             )}
           </div>
-          {[["/profile", "Your profile"], ["/team", "Team & access"], ["/connect", "Connect AI"], ["/guide", "Guide"]].map(([href, label]) => (
+          {[["/profile", "Your profile"], ["/team", "Team & access"], ["/connect", "Connect AI"], ["/help", "Guide"]].map(([href, label]) => (
             <Link key={href} href={href} role="menuitem" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-sm hover:bg-black/[0.05]">{label}</Link>
           ))}
           <form action="/auth/signout" method="post" className="mt-1 border-t border-black/[0.06] pt-1">
