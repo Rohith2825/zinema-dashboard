@@ -43,10 +43,7 @@ export async function ogCard() {
         <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", marginTop: -60, padding: "46px 70px 40px", borderRadius: 48, background: SURFACE, border: "2px solid rgba(255,255,255,0.8)", boxShadow: `22px 22px 50px ${DARK}, -22px -22px 50px #ffffff` }}>
           {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
           <img src={src} width={520} height={190} />
-          <div style={{ display: "flex", marginTop: 26, fontSize: 28, fontWeight: 800, letterSpacing: 10 }}>
-            ZINEMA<span style={{ color: ORANGE, marginLeft: 14, fontWeight: 900 }}>OS</span>
-          </div>
-          <div style={{ display: "flex", marginTop: 12, fontSize: 22, color: "#6c7079" }}>Every song, from first lyric to live.</div>
+          <div style={{ display: "flex", marginTop: 30, fontSize: 24, color: "#6c7079" }}>Every song, from first lyric to live.</div>
           <div style={{ display: "flex", marginTop: 20, fontSize: 19, color: "#6c7079" }}>
             {PAGES.map((p, i) => (
               <span key={p} style={{ display: "flex" }}>
