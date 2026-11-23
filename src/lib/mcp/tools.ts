@@ -51,7 +51,7 @@ async function songByCode(ctx: McpAuth, code: string) {
   const data = check(
     await ctx.supabase
       .from("songs")
-      .select("id, code, title, page_id, current_stage, ownership, artists, planned_release_date, drive_folder_id, spotify_url, cover_image_url, duration_ms, metadata")
+      .select("id, code, title, isrc, page_id, current_stage, ownership, artists, planned_release_date, drive_folder_id, spotify_url, cover_image_url, duration_ms, metadata")
       .eq("code", code.toUpperCase())
       .maybeSingle(),
   );
@@ -149,7 +149,7 @@ export const TOOLS: Tool[] = [
     name: "get_song",
     title: "Get a song",
     description:
-      "Everything about one song: stage, files and their review status, formats with checklists and where they're published, distribution (ISRC/UPC), credits, tasks, comments and the Drive folder.",
+      "Everything about one song: its Zinema ISRC (`isrc`, audio) and each video format's own ISRC, stage, files and their review status, formats with checklists and where they're published, distribution (ISRC/UPC), credits, tasks, comments and the Drive folder.",
     inputSchema: { type: "object", properties: { code: CODE }, required: ["code"] },
     readOnly: true,
     async run(ctx, a) {
@@ -161,7 +161,7 @@ export const TOOLS: Tool[] = [
           .eq("song_id", song.id),
         ctx.supabase
           .from("song_formats")
-          .select("id, kind, label, status, mandatory, planned_at, went_live_at, live_url, drive_folder_url, notes, format_checklist(id, label, position, done_at), format_publications(platform, url, published_at)")
+          .select("id, kind, label, status, mandatory, isrc, planned_at, went_live_at, live_url, drive_folder_url, notes, format_checklist(id, label, position, done_at), format_publications(platform, url, published_at)")
           .eq("song_id", song.id),
         ctx.supabase.from("distribution_records").select("distributor, legacy, isrc, upc, catalog_number, release_date, dsp_status").eq("song_id", song.id),
         ctx.supabase.from("song_credits").select("role, name").eq("song_id", song.id),
@@ -355,7 +355,7 @@ export const TOOLS: Tool[] = [
   {
     name: "record_distribution",
     title: "Record distribution",
-    description: "Record the PDL (Cosmos) upload for a song: ISRC, UPC, catalog number, release date and status.",
+    description: "Record the PDL (Cosmos) upload for a song: ISRC, UPC, catalog number, release date and status. New Tamil, Hindi, Marathi and Spiritual songs already have a Zinema ISRC (`isrc` in get_song); leave isrc out to use it.",
     inputSchema: {
       type: "object",
       properties: {
@@ -367,7 +367,7 @@ export const TOOLS: Tool[] = [
         dsp_status: s("Status shown in Cosmos"),
         distributor: s("Defaults to PDL"),
       },
-      required: ["code", "isrc"],
+      required: ["code"],
     },
     async run(ctx, a) {
       const song = await songByCode(ctx, need(a, "code"));
@@ -377,7 +377,7 @@ export const TOOLS: Tool[] = [
           song_id: song.id,
           distributor,
           legacy: distributor === "DistroKid",
-          isrc: need(a, "isrc").replace(/[-\s]/g, "").toUpperCase(),
+          isrc: (str(a, "isrc") ?? (song.isrc as string | null) ?? need(a, "isrc")).replace(/[-\s]/g, "").toUpperCase(),
           upc: str(a, "upc")?.replace(/\s/g, "") ?? null,
           catalog_number: str(a, "catalog_number")?.toUpperCase() ?? null,
           release_date: str(a, "release_date") ?? null,

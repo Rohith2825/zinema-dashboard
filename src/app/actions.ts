@@ -34,7 +34,7 @@ function friendly(err: { message: string } | null): string {
   const m = err.message;
   if (m.includes("row-level security")) return "You don't have permission to do that on this page.";
   if (m.includes("duplicate key")) return "That already exists.";
-  if (m.includes("isrc_check") || m.includes("distribution_records_isrc_check")) return "ISRC must look like INP2X2501681 (12 characters).";
+  if (m.includes("isrc_check") || m.includes("distribution_records_isrc_check")) return "ISRC must look like INZ262610001 (12 characters).";
   if (m.includes("upc_check")) return "UPC must be 12–13 digits.";
   return m;
 }

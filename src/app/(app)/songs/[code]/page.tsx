@@ -44,7 +44,7 @@ type FormatType = { kind: DeliverableKind; label: string; stage: StageKey; posit
 type Format = {
   id: string; deliverable_id: string | null; kind: DeliverableKind; label: string; status: FormatStatus; mandatory: boolean;
   owner_id: string | null; planned_at: string | null; went_live_at: string | null; live_url: string | null;
-  drive_folder_url: string | null; notes: string | null;
+  drive_folder_url: string | null; notes: string | null; isrc: string | null;
   format_checklist: { id: string; label: string; position: number; done_at: string | null; done_by: string | null }[];
   format_publications: { id: string; platform: Platform; url: string | null; published_at: string; published_by: string | null }[];
 };
@@ -61,7 +61,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
 
   const { data: song } = await db
     .from("songs")
-    .select("id, code, title, artists, cover_url, cover_image_url, spotify_url, duration_ms, ownership, drive_folder_id, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix)")
+    .select("id, code, title, isrc, artists, cover_url, cover_image_url, spotify_url, duration_ms, ownership, drive_folder_id, page_id, current_stage, planned_release_date, metadata, page:pages(name, slug, code_prefix)")
     .eq("code", decodeURIComponent(code).toUpperCase())
     .maybeSingle();
   if (!song) notFound();
@@ -79,7 +79,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
     db.from("profiles").select("id, full_name, nickname, handle, bio, email, is_org_admin").order("full_name"),
     s.isOwner ? db.from("song_rights").select("splits, notes, contract_drive_url, updated_at").eq("song_id", song.id).maybeSingle() : Promise.resolve({ data: null }),
     db.from("song_formats")
-      .select("id, deliverable_id, kind, label, status, mandatory, owner_id, planned_at, went_live_at, live_url, drive_folder_url, notes, format_checklist(id, label, position, done_at, done_by), format_publications(id, platform, url, published_at, published_by)")
+      .select("id, deliverable_id, kind, label, status, mandatory, isrc, owner_id, planned_at, went_live_at, live_url, drive_folder_url, notes, format_checklist(id, label, position, done_at, done_by), format_publications(id, platform, url, published_at, published_by)")
       .eq("song_id", song.id).order("created_at"),
     db.from("format_types").select("kind, label, stage, position").order("position"),
     db.from("song_captions").select("captions, created_at, created_by, created_via").eq("song_id", song.id).order("created_at", { ascending: false }).limit(1),
@@ -118,6 +118,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
             <p className={`text-sm ${song.artists ? "text-zinc-600" : "italic text-zinc-400"}`}>{song.artists || "Artists not added yet"}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <OwnershipTag ownership={song.ownership} />
+              {song.isrc && <span className="rounded-full bg-black/[0.06] px-2.5 py-0.5 font-mono text-xs" title="Zinema ISRC for the song (audio)">ISRC {song.isrc}</span>}
               <Badge><PageDot prefix={page?.code_prefix} className="mr-1" />{pageShort(page?.name)}</Badge>
               {meta.language && <Badge>{meta.language}</Badge>}
               {meta.style && <Badge>{meta.style}</Badge>}
@@ -228,7 +229,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
                 <ActionForm action={addDistribution} className="mt-3 space-y-2" resetOnSuccess>
                   <input type="hidden" name="song_id" value={song.id} />
                   <input type="hidden" name="distributor" value="PDL" />
-                  <input name="isrc" required placeholder="ISRC (e.g. INP2X2501681)" className="input font-mono" />
+                  <input name="isrc" required defaultValue={song.isrc ?? ""} placeholder="ISRC (e.g. INZ262610001)" className="input font-mono" />
                   <div className="grid grid-cols-2 gap-2">
                     <input name="upc" placeholder="UPC" className="input font-mono" />
                     <input name="catalog_number" placeholder="Catalog no." className="input font-mono" />
@@ -617,6 +618,7 @@ function FormatsSection({
                   <span className={`flex flex-wrap items-center gap-2 ${f.status === "dropped" ? "text-zinc-400 line-through" : ""}`}>
                     <span className="text-sm font-medium">{f.label}</span>
                     {f.label !== KIND_LABEL[f.kind] && !f.label.startsWith(KIND_LABEL[f.kind]) && <Badge>{KIND_LABEL[f.kind]}</Badge>}
+                    {f.isrc && <span className="font-mono text-[11px] text-muted" title="Zinema ISRC for this video">ISRC {f.isrc}</span>}
                     {f.mandatory && <Badge>required</Badge>}
                     <Badge tone={FORMAT_TONE[f.status]}>{formatStatusLabel(f.status)}</Badge>
                   </span>
