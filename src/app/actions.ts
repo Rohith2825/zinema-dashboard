@@ -11,6 +11,7 @@ import { newToken, tokensEnabled } from "@/lib/mcp/auth";
 import { spotifyConfigured, syncSpotify } from "@/lib/spotify";
 import { PerformanceError, pullYouTube } from "@/lib/performance";
 import { RULE_GROUPS } from "@/lib/audit/rules-spec";
+import { sendTeamEmails, teamEmail } from "@/lib/email";
 
 async function ctx() {
   const supabase = await createClient();
@@ -745,4 +746,23 @@ export async function saveAuditRules(_: ActionState, fd: FormData): Promise<Acti
   }
   refresh();
   return { ok: "Saved. The next audit on this page uses these rules." };
+}
+
+// ─────────── Messages to the team ───────────
+/** An admin or owner writes to everyone (or one page). Saved to each Inbox and emailed from the brand address. */
+export async function sendTeamMessage(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase, uid } = await ctx();
+  const subject = str(fd, "subject"), body = str(fd, "body");
+  if (!subject || !body) return fail("Write a subject and a message.");
+  const { data, error } = await supabase.rpc("post_team_message", { p_subject: subject, p_body: body, p_page: str(fd, "page_id") });
+  if (error) return fail(/^(Only admins|The subject|The message|Nobody else)/.test(error.message) ? error.message : "Couldn't send that. Try again.");
+  const people = (data ?? []) as { to_email: string; to_name: string | null; wants_email: boolean }[];
+  const { data: me } = await supabase.from("profiles").select("full_name, nickname, email").eq("id", uid).single();
+  const from = me?.nickname || me?.full_name || "Zinema Music";
+  const emailed = people.filter((p) => p.wants_email);
+  const sent = await sendTeamEmails(emailed.map((p) => ({ to: p.to_email, ...teamEmail({ subject, body, from, to: p.to_name }) })), me?.email ?? null);
+  refresh();
+  const inbox = `It is in ${people.length} ${people.length === 1 ? "person's" : "people's"} Inbox`;
+  if (!sent.ok) return { error: `${inbox}, but the emails didn't go out: ${sent.error}` };
+  return { ok: `Sent. ${inbox}${emailed.length ? ` and was emailed to ${emailed.length}` : ""}.${people.length - emailed.length ? ` ${people.length - emailed.length} have emails switched off.` : ""}` };
 }

@@ -5,6 +5,8 @@ import type { PickerPage, PickerPerson } from "@/components/role-picker";
 import { TeamSkeleton } from "@/components/skeletons";
 import { Avatar, Badge, PageDot, PageTitle, pageShort } from "@/components/ui";
 import { getSession } from "@/lib/session";
+import { sendTeamMessage } from "@/app/actions";
+import { ActionForm, Submit } from "@/components/action-form";
 import { ROLES, shortName, type Profile } from "@/lib/types";
 
 export default function TeamPage() {
@@ -56,6 +58,26 @@ async function Team() {
         sub="Everyone who has signed in. Admins decide who gets in, at what level, and on which pages."
         actions={<Link href="/profile" className="btn-ghost">Edit my profile</Link>}
       />
+
+      {s.isAdmin && (
+        <details className="card mb-8 p-5 md:p-6">
+          <summary className="cursor-pointer font-medium">Message the team <span className="ml-1 text-xs font-normal text-muted">by email from brands@zinema.music, and in their Inbox</span></summary>
+          <ActionForm action={sendTeamMessage} resetOnSuccess confirm="Send this message to the team now?" className="mt-4 space-y-3">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-[220px_minmax(0,1fr)]">
+              <select name="page_id" defaultValue="" className="input" aria-label="Who gets it">
+                <option value="">Everyone on the team</option>
+                {s.pages.map((p) => <option key={p.id} value={p.id}>Only {pageShort(p.name)}</option>)}
+              </select>
+              <input name="subject" required minLength={3} maxLength={150} placeholder="Subject" className="input" />
+            </div>
+            <textarea name="body" required minLength={3} maxLength={5000} rows={5} placeholder="Your message" className="input" />
+            <div className="flex flex-wrap items-center gap-3">
+              <Submit>Send message</Submit>
+              <p className="text-xs text-muted">Each person gets their own copy. Replies come to your own email. Automatic notifications still come from notifications@zinema.music.</p>
+            </div>
+          </ActionForm>
+        </details>
+      )}
 
       {/* 1 · People waiting: the thing an admin came here to do */}
       {needs.length > 0 && (

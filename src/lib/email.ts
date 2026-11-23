@@ -50,3 +50,37 @@ export async function sendEmail(to: string, mail: { subject: string; text: strin
   const detail = await res.json().catch(() => null);
   return { ok: false, error: detail?.message ?? `Resend answered ${res.status}` };
 }
+
+/** Messages a person writes to the team go from the brand address; replies go to the person who wrote it. */
+const TEAM_FROM = process.env.TEAM_EMAIL_FROM || "Zinema Music <brands@zinema.music>";
+
+export function teamEmail(m: { subject: string; body: string; from: string; to: string | null }) {
+  const text = `${m.to ? `Hi ${m.to.split(" ")[0]},` : "Hi,"}\n\n${m.body}\n\n${m.from}\nZinema Music\n\nSent to the team through Zinema OS: ${SITE_URL}/inbox`;
+  const html = `<!doctype html><html><body style="margin:0;background:#eceef2;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0d0d10">
+<div style="max-width:560px;margin:0 auto;padding:32px 16px">
+  <p style="margin:0 0 16px;font-size:13px;font-weight:800;letter-spacing:3px">ZINEMA <span style="color:#fc7c0f">MUSIC</span></p>
+  <div style="background:#ffffff;border-radius:20px;padding:28px">
+    <p style="margin:0;font-size:12px;color:#6c7079">${m.to ? `Hi ${esc(m.to.split(" ")[0])},` : "Hi,"}</p>
+    <h1 style="margin:8px 0 0;font-size:20px;line-height:1.3">${esc(m.subject)}</h1>
+    <p style="margin:18px 0 0;font-size:15px;line-height:1.6;white-space:pre-line">${esc(m.body)}</p>
+    <p style="margin:22px 0 0;font-size:14px;color:#6c7079">${esc(m.from)}<br>Zinema Music</p>
+  </div>
+  <p style="margin:16px 4px 0;font-size:11px;color:#6c7079;line-height:1.6">Sent to the Zinema Music team through <a href="${SITE_URL}/inbox" style="color:#6c7079">Zinema OS</a>. Reply to this email to answer ${esc(m.from.split(" ")[0])}.</p>
+</div></body></html>`;
+  return { subject: m.subject, text, html };
+}
+
+/** Sends one copy each to several people in a single request. */
+export async function sendTeamEmails(mails: { to: string; subject: string; text: string; html: string }[], replyTo: string | null): Promise<{ ok: boolean; error?: string }> {
+  if (!emailConfigured()) return { ok: false, error: "RESEND_API_KEY is not set" };
+  if (!mails.length) return { ok: true };
+  const res = await fetch("https://api.resend.com/emails/batch", {
+    method: "POST",
+    cache: "no-store",
+    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify(mails.slice(0, 100).map((m) => ({ from: TEAM_FROM, to: [m.to], subject: m.subject, text: m.text, html: m.html, ...(replyTo ? { reply_to: replyTo } : {}) }))),
+  });
+  if (res.ok) return { ok: true };
+  const detail = await res.json().catch(() => null);
+  return { ok: false, error: detail?.message ?? `Resend answered ${res.status}` };
+}
