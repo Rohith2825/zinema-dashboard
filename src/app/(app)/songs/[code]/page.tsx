@@ -246,6 +246,11 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
                   <input type="hidden" name="song_id" value={song.id} />
                   <input type="hidden" name="distributor" value="PDL" />
                   <input name="isrc" required defaultValue={song.isrc ?? ""} placeholder="ISRC (e.g. INZ262610001)" className="input font-mono" />
+                  <p className="text-xs text-muted">
+                    {song.isrc
+                      ? "Filled in with this song's Zinema ISRC. Change it only if the distributor gave a different one."
+                      : "This song has no Zinema ISRC yet. Set its language to Tamil, Hindi, Marathi or Devotional under Details and it gets one by itself."}
+                  </p>
                   <div className="grid grid-cols-2 gap-2">
                     <input name="upc" placeholder="UPC" className="input font-mono" />
                     <input name="catalog_number" placeholder="Catalog no." className="input font-mono" />

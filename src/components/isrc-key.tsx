@@ -58,12 +58,12 @@ export function IsrcRules() {
       </div>
       <ul className="list-disc space-y-1 pl-5 text-[13px] text-zinc-700">
         <li><b>Label</b>: <span className="font-mono">Z26</span> is always a song, <span className="font-mono">Z27</span> is always a video.</li>
-        <li><b>Page</b>: 1 Tamil, 2 Hindi, 3 Marathi, 4 Spiritual.</li>
+        <li><b>Page</b>: 1 Tamil, 2 Hindi, 3 Marathi, 4 Spiritual. A song on the Main or Community page is numbered by its language (a Tamil song there is also 1).</li>
         <li><b>Song</b>: counts up on each page and starts again at 1 every year. A song has four digits (0002); its videos repeat the last three (002).</li>
         <li><b>Video</b> (last digit): 1 lyric video, 2 main music video, 3 visualizer, 4 AI music video, 5 to 9 for one more video of a kind the song already has.</li>
         <li>So a video with the same year, page and song number as a song <b>belongs to that song</b>.</li>
         <li>Zinema OS gives the numbers by itself: the song&apos;s when the song is created, a video&apos;s when that video format is added. A number never changes.</li>
-        <li>Songs released before this (and Main and Community songs) keep the ISRC their distributor gave them.</li>
+        <li>Songs released before this keep the ISRC their distributor gave them.</li>
       </ul>
     </div>
   );
