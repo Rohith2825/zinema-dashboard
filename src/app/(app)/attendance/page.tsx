@@ -6,7 +6,7 @@ import { AttendanceSwitch } from "@/components/attendance-switch";
 import { ActionForm, Submit } from "@/components/action-form";
 import { AttendanceMarker, type Office } from "@/components/attendance-marker";
 import { ListSkeleton } from "@/components/skeletons";
-import { Avatar, Badge, Empty, PageTitle } from "@/components/ui";
+import { Avatar, Badge, PageTitle } from "@/components/ui";
 import { getSession } from "@/lib/session";
 import { TZ, fmtDate, selfiesPurged, shortName, type Profile } from "@/lib/types";
 
@@ -53,7 +53,6 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
   const myToday = mine.filter((r) => r.day === today);
   const checkIn = myToday.find((r) => r.kind === "check_in");
   const checkOut = myToday.find((r) => r.kind === "check_out");
-  const activeOffices = offices.filter((o) => o.active);
   const expected = people.filter((p) => required.has(p.id));
 
   return (
@@ -86,8 +85,8 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={`/api/attendance/selfie/${r!.id}`} alt="" className="h-14 w-14 rounded-xl object-cover" />
                     <span className="text-xs">
-                      <span className="block font-semibold">{r!.kind === "check_in" ? "Check-in" : "Check-out"} · {time(r!.at)}</span>
-                      <span className="text-muted">{r!.office?.name} · {r!.distance_m} m away</span>
+                      <span className="block font-semibold">{r!.kind === "check_in" ? "Check-in" : "Check-out"}</span>
+                      <span className="text-muted">{time(r!.at)}</span>
                     </span>
                   </a>
                 ))}
@@ -96,11 +95,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
 
             {iAmRequired && !checkOut && (
               <div className="mx-auto mt-6 max-w-xl">
-                {activeOffices.length === 0 ? (
-                  <Empty>No office locations have been added yet. Ask an owner to add one.</Empty>
-                ) : (
-                  <AttendanceMarker key={checkIn ? "out" : "in"} offices={activeOffices} kind={checkIn ? "check_out" : "check_in"} />
-                )}
+                <AttendanceMarker key={checkIn ? "out" : "in"} kind={checkIn ? "check_out" : "check_in"} />
               </div>
             )}
             {!iAmRequired && <p className="mt-3 text-sm text-muted">An owner switches attendance on per person. If you think it should be on for you, write to info@zinema.music.</p>}
@@ -121,7 +116,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
                   <button className="btn-ghost">Show</button>
                 </form>
               </div>
-              {selfiesPurged(day, today) && <p className="mt-3 text-xs text-muted">Selfies for this month have been removed (they&apos;re kept for the month plus 5 days). Times and locations stay on record.</p>}
+              {selfiesPurged(day, today) && <p className="mt-3 text-xs text-muted">Selfies for this month have been removed (they&apos;re kept for the month plus 5 days). Times stay on record.</p>}
               <ul className="mt-5 divide-y divide-black/[0.06]">
                 {expected.map((p) => {
                   const cin = dayRows.find((r) => r.user_id === p.id && r.kind === "check_in");
@@ -131,9 +126,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/attendance">, "sear
                       <Avatar name={p.full_name} email={p.email} size={38} />
                       <div className="min-w-0 flex-1 basis-[calc(100%-4rem)] sm:basis-40">
                         <p className="truncate text-sm font-medium">{shortName(p)}</p>
-                        <p className="truncate text-xs text-muted">
-                          {cin ? <>{cin.office?.name} · {cin.distance_m} m · <a className="underline" href={mapLink(cin)} target="_blank" rel="noreferrer">map</a></> : "No check-in"}
-                        </p>
+                        <p className="truncate text-xs text-muted">{cin ? `Checked in at ${time(cin.at)}` : "No check-in"}</p>
                       </div>
                       {[cin, cout].map((r, i) =>
                         r && selfiesPurged(r.day, today) ? (

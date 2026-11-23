@@ -622,6 +622,8 @@ export async function syncFromSpotify(): Promise<ActionState> {
 }
 
 // ─────────── Attendance ───────────
+// The location / office geofence is parked for now (removed 2026-11-23): enrolled people check
+// in / out with a time-stamped selfie from anywhere. Selfies are stored privately in Drive.
 const istNow = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Kolkata", dateStyle: "short", timeStyle: "medium" }).format(new Date()); // 2026-11-12 09:31:05
 
 async function selfieFolder(supabase: Awaited<ReturnType<typeof ctx>>["supabase"], uid: string) {
@@ -646,7 +648,7 @@ export async function startSelfieUpload(kind: "check_in" | "check_out", size: nu
   }
 }
 
-export async function markAttendance(p: { kind: "check_in" | "check_out"; lat: number; lng: number; accuracy: number | null; fileId: string; folderId: string }): Promise<ActionState> {
+export async function markAttendance(p: { kind: "check_in" | "check_out"; fileId: string; folderId: string }): Promise<ActionState> {
   const { supabase, uid } = await ctx();
   try {
     const folderId = await selfieFolder(supabase, uid);
@@ -655,7 +657,7 @@ export async function markAttendance(p: { kind: "check_in" | "check_out"; lat: n
   } catch (e) {
     return fail(e instanceof Error ? e.message : "Couldn't verify the selfie.");
   }
-  const { error } = await supabase.rpc("mark_attendance", { p_kind: p.kind, p_lat: p.lat, p_lng: p.lng, p_accuracy: p.accuracy, p_selfie_file_id: p.fileId });
+  const { error } = await supabase.rpc("mark_attendance", { p_kind: p.kind, p_selfie_file_id: p.fileId });
   if (error) return fail(error.message);
   refresh();
   return { ok: p.kind === "check_in" ? "Checked in. Have a good day." : "Checked out." };
