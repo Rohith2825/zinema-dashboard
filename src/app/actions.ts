@@ -10,6 +10,7 @@ import { DriveError, attendanceFolder, createUploadSession, driveConfigured, ens
 import { newToken, tokensEnabled } from "@/lib/mcp/auth";
 import { spotifyConfigured, syncSpotify } from "@/lib/spotify";
 import { PerformanceError, pullYouTube } from "@/lib/performance";
+import { RULE_GROUPS } from "@/lib/audit/rules-spec";
 
 async function ctx() {
   const supabase = await createClient();
@@ -752,4 +753,53 @@ export async function refreshPerformance(_: ActionState, fd: FormData): Promise<
     if (e instanceof PerformanceError) return fail(e.message);
     throw e;
   }
+}
+
+// ─────────── Audit rules ───────────
+/** Saves one group of audit rules for a page. The database lets only admins and owners do this. */
+export async function saveAuditRules(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const pageId = str(fd, "page_id");
+  const group = RULE_GROUPS.find((g) => g.id === str(fd, "group"));
+  if (!pageId || !group) return fail("Something is missing. Reload the page and try again.");
+
+  const next: Record<string, number | [number, number]> = {};
+  for (const f of group.fields) {
+    const read = (name: string) => {
+      const v = Number(str(fd, name) ?? NaN);
+      return Number.isFinite(v) && (f.min === undefined || v >= f.min) && (f.max === undefined || v <= f.max) ? v : null;
+    };
+    const range = f.min !== undefined ? ` (between ${f.min} and ${f.max})` : "";
+    if (f.pair) {
+      const a = read(`${f.key}.0`), b = read(`${f.key}.1`);
+      if (a === null || b === null) return fail(`"${f.label}" needs two numbers${range}.`);
+      if (a > b) return fail(`"${f.label}": the first number must not be larger than the second.`);
+      next[f.key] = [a, b];
+    } else {
+      const v = read(f.key);
+      if (v === null || (f.options && !f.options.includes(v))) return fail(`"${f.label}" needs a number${range}.`);
+      next[f.key] = v;
+    }
+  }
+  const one = (k: string) => next[k] as number, two = (k: string) => next[k] as [number, number];
+  if (group.id === "mix") {
+    if (two("lufs_warn")[0] > two("lufs_pass")[0] || two("lufs_warn")[1] < two("lufs_pass")[1]) return fail("The loudness warning range must be wider than the pass range.");
+    if (one("tp_max_if_loud_dbtp") > one("tp_max_dbtp")) return fail("The true peak limit for loud masters can't be higher than the normal limit.");
+    if (one("bit_depth_min") > one("bit_depth_pref")) return fail("The lowest accepted bit depth can't be higher than the preferred one.");
+    if (one("clip_runs_warn") > one("clip_runs_fail") || one("dc_warn_pct") > one("dc_fail_pct") || one("phase_fail") > one("phase_warn")) return fail("A warning level must come before its fail level.");
+  }
+  if ("min_short_px" in next && one("min_short_px") > one("warn_short_px")) return fail("“Too small below” can't be higher than “Sharp enough from”.");
+  if ("min_px" in next && one("min_px") > one("size_px")) return fail("“Too small below” can't be higher than the target size.");
+  if ("duration_warn_s" in next && one("duration_warn_s") < two("duration_s")[1]) return fail("The fail length must be longer than the good length.");
+
+  for (const kind of group.kinds) {
+    const { data: row } = await supabase.from("audit_thresholds").select("rules").eq("page_id", pageId).eq("kind", kind).maybeSingle();
+    const rules = { ...group.defaults, ...((row?.rules as object | null) ?? {}), ...next };
+    // .select() so a change the database refuses (not an admin) is reported instead of passing silently.
+    const { data, error } = await supabase.from("audit_thresholds").upsert({ page_id: pageId, kind, rules }, { onConflict: "page_id,kind" }).select("kind");
+    if (error) return fail(friendly(error));
+    if (!data?.length) return fail("Only admins and owners can change audit rules.");
+  }
+  refresh();
+  return { ok: "Saved. The next audit on this page uses these rules." };
 }

@@ -26,6 +26,7 @@ export const GROUPS = [
       { href: "/inbox", label: "Inbox", icon: "M4 13l2-8h12l2 8v6H4zM4 13h5l1 2h4l1-2h5" },
       { href: "/attendance", label: "Attendance", icon: "M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" },
       { href: "/team", label: "Team", icon: "M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 010 6M18 15c2 .6 3 2.300 3 5" },
+      { href: "/audit-rules", label: "Audit rules", icon: "M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4" },
       { href: "/connect", label: "Connect AI", icon: "M9 3v5M15 3v5M7 8h10v4a5 5 0 01-10 0zM12 17v4" },
       { href: "/help", label: "Guide", icon: "M5 4h10a3 3 0 013 3v13H8a3 3 0 01-3-3zM5 17a3 3 0 013-3h10" },
     ],
