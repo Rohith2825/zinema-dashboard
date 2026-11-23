@@ -2,7 +2,7 @@
  * Measures a WAV master without ffmpeg, reading it as a stream so a 100 MB file never sits in memory.
  * Loudness follows ITU-R BS.1770-4 / EBU R128 (K-weighting, 400 ms blocks, −70 LUFS and −10 LU gates),
  * loudness range follows EBU Tech 3342, and true peak is taken from a 4× oversampled signal.
- * Checked against `ffmpeg -af ebur128=peak=true` (see scripts/audit-selftest.mjs).
+ * Checked against `ffmpeg -af ebur128=peak=true` on 16-bit, 24-bit and float test files.
  */
 
 export type WavMetrics = {
