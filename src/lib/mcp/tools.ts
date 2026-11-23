@@ -2,6 +2,8 @@ import "server-only";
 import { parseDriveId } from "@/lib/drive";
 import { DriveError, driveConfigured, ensureFolder, ensureSongFolder, folderUrl, getFile, listFolder, uploadBytes } from "@/lib/google-drive";
 import { SITE_URL } from "@/lib/site";
+import { aiConfigured } from "@/lib/audit/ai";
+import { AuditError, draftCaptions, readLyrics, runAudit } from "@/lib/audit/run";
 import { spotifyConfigured, syncSpotify } from "@/lib/spotify";
 import { FORMAT_PLATFORMS, KIND_LABEL, PLATFORM_LABEL, STAGES } from "@/lib/types";
 import type { McpAuth } from "./auth";
@@ -153,7 +155,7 @@ export const TOOLS: Tool[] = [
       const [deliverables, formats, dist, credits, tasks, comments] = await Promise.all([
         ctx.supabase
           .from("deliverables")
-          .select("id, stage, kind, slot, required, due_at, deliverable_versions(id, version, status, drive_url, note, submitted_at, reviews(decision, comments, created_at))")
+          .select("id, stage, kind, slot, required, due_at, deliverable_versions(id, version, status, drive_url, note, submitted_at, reviews(decision, comments, created_at), audit_runs(skill, verdict, findings, created_at))")
           .eq("song_id", song.id),
         ctx.supabase
           .from("song_formats")
@@ -645,6 +647,137 @@ export const TOOLS: Tool[] = [
     },
   },
 
+  // ───────────── Audits & captions ─────────────
+  {
+    name: "run_audit",
+    title: "Run the audit on a submitted file",
+    description:
+      "Runs Zinema's own audit on a submitted file version and saves the result on the song. Master WAV → mix audit (loudness LUFS, true peak, clipping, bit depth, sample rate, phase, silence: measured in code, never estimated). Artwork → artwork audit (size, colour, transparency, plus a look for store-rule problems). Lyrics → lyric review. Get version ids from get_song. Takes up to a minute for a full master. Never state loudness or peak numbers yourself; always take them from this tool.",
+    inputSchema: { type: "object", properties: { version_id: s("File version id from get_song") }, required: ["version_id"] },
+    async run(ctx, a) {
+      try {
+        const r = await runAudit(ctx.supabase, need(a, "version_id"), "agent");
+        return { skill: r.skill, verdict: r.verdict, findings: r.findings, report: r.report_md, note: "Saved on the song. This is a recommendation; a human checker still decides." };
+      } catch (e) {
+        if (e instanceof AuditError) {
+          const lyric = !aiConfigured() && /AI reviewer/.test(e.message);
+          throw new ToolError(lyric ? "Zinema OS has no AI key of its own, so do this review yourself: call get_lyrics, review it, then save it with record_audit." : e.message);
+        }
+        throw e;
+      }
+    },
+  },
+  {
+    name: "get_lyrics",
+    title: "Read a song's lyrics",
+    description: "The text of a song's lyric file (the approved version if there is one, otherwise the newest), with its version id. Use it before reviewing lyrics or writing captions.",
+    inputSchema: { type: "object", properties: { code: CODE }, required: ["code"] },
+    readOnly: true,
+    async run(ctx, a) {
+      const song = await songByCode(ctx, need(a, "code"));
+      const rows = check(await ctx.supabase.from("deliverables").select("deliverable_versions(id, drive_file_id, drive_url, status, version)").eq("song_id", song.id).eq("kind", "lyrics"));
+      const versions = (rows ?? []).flatMap((x) => x.deliverable_versions as { id: string; drive_file_id: string; drive_url: string; status: string; version: number }[]);
+      const v = versions.sort((x, y) => Number(y.status === "approved") - Number(x.status === "approved") || y.version - x.version)[0];
+      if (!v) return { lyrics: null, note: "No lyric file has been submitted for this song yet." };
+      try {
+        const l = await readLyrics(v.drive_file_id);
+        return "text" in l
+          ? { version_id: v.id, version: v.version, status: v.status, lyrics: l.text }
+          : { version_id: v.id, version: v.version, status: v.status, lyrics: null, note: `The lyric is a PDF, which can't be read as text here. Open it: ${v.drive_url}` };
+      } catch (e) {
+        if (e instanceof DriveError || e instanceof AuditError) throw new ToolError(e.message);
+        throw e;
+      }
+    },
+  },
+  {
+    name: "record_audit",
+    title: "Save a review you wrote",
+    description:
+      "Save your own review of a submitted file on the song (for example a lyric review, or a carousel or video check). Only for judgement: for a master's loudness and peaks, or artwork size, use run_audit so the numbers are measured. verdict 'fail' means it should not go ahead as it is.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        version_id: s("File version id from get_song or get_lyrics"),
+        skill: s("What kind of review this is", { enum: ["lyric-review", "artwork-audit", "carousel-audit", "video-audit"] }),
+        verdict: s("Overall result", { enum: ["pass", "warn", "fail"] }),
+        findings: {
+          type: "array",
+          description: "One entry per thing you checked",
+          items: {
+            type: "object",
+            properties: { check: s("What was checked, e.g. 'Hook'"), status: s("Result", { enum: ["pass", "warn", "fail", "info"] }), value: s("What you found, e.g. '6/10'"), target: s("What good looks like"), fix: s("What to change (leave out when it passed)") },
+            required: ["check", "status", "value"],
+          },
+        },
+        report: s("Short written note in Markdown. Use '### Heading' sections, e.g. '### Reviewer's note', '### Suggestions'."),
+      },
+      required: ["version_id", "skill", "verdict", "findings"],
+    },
+    async run(ctx, a) {
+      const skill = need(a, "skill"), verdict = need(a, "verdict");
+      if (!["lyric-review", "artwork-audit", "carousel-audit", "video-audit"].includes(skill)) throw new ToolError("Unknown skill.");
+      if (!["pass", "warn", "fail"].includes(verdict)) throw new ToolError("verdict must be pass, warn or fail.");
+      const raw = Array.isArray(a.findings) ? (a.findings as Record<string, unknown>[]) : [];
+      const text = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
+      const findings = raw.slice(0, 30).map((f) => ({
+        check: text(f.check, 80), status: ["pass", "warn", "fail", "info"].includes(f.status as string) ? (f.status as string) : "info",
+        value: text(f.value, 400), target: text(f.target, 200) || "AI opinion", ...(text(f.fix, 600) ? { fix: text(f.fix, 600) } : {}),
+      })).filter((f) => f.check && f.value);
+      if (!findings.length) throw new ToolError("Give at least one finding with a check and a value.");
+      check(await ctx.supabase.from("audit_runs").insert({
+        version_id: need(a, "version_id"), skill: `${skill}@assistant`, verdict, findings, metrics: {},
+        report_md: str(a, "report")?.slice(0, 8000) ?? null, created_via: "agent",
+      }));
+      return { saved: true, note: "Saved on the song as an AI recommendation. A human checker still decides." };
+    },
+  },
+  {
+    name: "save_captions",
+    title: "Save caption drafts on a song",
+    description:
+      "Save captions you wrote for a song so the team can copy them from the song's Captions tab. Use get_song (credits, ISRC, links) and get_lyrics first, and use names exactly as credited. If you'd rather have Zinema OS write them, leave every caption field empty and pass only code (and brief).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: CODE,
+        brief: s("What these captions are for, e.g. 'release day'"),
+        instagram_caption: s("Instagram caption"),
+        instagram_hashtags: { type: "array", items: { type: "string" }, description: "8–12 hashtags, without #" },
+        romanised_instagram_caption: s("The Instagram caption in Latin letters, if it uses another script"),
+        youtube_title: s("YouTube title, under 70 characters"),
+        youtube_description: s("YouTube description with the credits block"),
+        shorts_title: s("YouTube Shorts title"),
+        shorts_description: s("YouTube Shorts description"),
+        x_post: s("Post for X, under 260 characters"),
+        on_screen_hooks: { type: "array", items: { type: "string" }, description: "Three short text overlays for the first second of a reel" },
+      },
+      required: ["code"],
+    },
+    async run(ctx, a) {
+      const song = await songByCode(ctx, need(a, "code"));
+      const list = (k: string) => (Array.isArray(a[k]) ? (a[k] as unknown[]).filter((x): x is string => typeof x === "string").slice(0, 20) : []);
+      const wrote = ["instagram_caption", "youtube_title", "youtube_description", "shorts_title", "x_post"].some((k) => str(a, k));
+      if (!wrote) {
+        try {
+          return { saved: true, captions: await draftCaptions(ctx.supabase, ctx.userId, song.code, str(a, "brief") ?? null, "agent"), url: songUrl(song.code) };
+        } catch (e) {
+          if (e instanceof AuditError) throw new ToolError(/AI reviewer/.test(e.message) ? "Zinema OS has no AI key of its own, so write the captions yourself and pass them to this tool." : e.message);
+          throw e;
+        }
+      }
+      const captions = {
+        instagram: { caption: str(a, "instagram_caption") ?? "", hashtags: list("instagram_hashtags").map((h) => h.replace(/^#/, "")) },
+        youtube: { title: str(a, "youtube_title") ?? "", description: str(a, "youtube_description") ?? "" },
+        shorts: { title: str(a, "shorts_title") ?? "", description: str(a, "shorts_description") ?? "" },
+        x: { post: str(a, "x_post") ?? "" },
+        on_screen_hooks: list("on_screen_hooks"),
+        romanised_instagram_caption: str(a, "romanised_instagram_caption") ?? "",
+      };
+      check(await ctx.supabase.from("song_captions").insert({ song_id: song.id, captions, brief: str(a, "brief") ?? null, created_by: ctx.userId, created_via: "agent" }));
+      return { saved: true, url: songUrl(song.code), note: "Saved as a draft. A person reads it before anything is posted." };
+    },
+  },
   // ───────────── Google Drive ─────────────
   {
     name: "save_to_drive",

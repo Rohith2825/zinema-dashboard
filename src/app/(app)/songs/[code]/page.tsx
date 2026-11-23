@@ -11,12 +11,14 @@ import { ActionForm, Submit } from "@/components/action-form";
 import { Cover } from "@/components/cover";
 import { Tabs } from "@/components/tabs";
 import { DriveUpload } from "@/components/drive-upload";
+import { AuditPanel, type AuditRun } from "@/components/audit-panel";
+import { CaptionsPanel, type CaptionSet } from "@/components/captions-panel";
 import { folderUrl } from "@/lib/site";
 import { coverSrc } from "@/lib/drive";
 import { Badge, Empty, OwnershipTag, PageDot, VERSION_LABEL, VERSION_TONE, pageShort, type Tone } from "@/components/ui";
 import { getSession, type Session } from "@/lib/session";
 import {
-  FORMAT_PLATFORMS, FORMAT_STATUSES, KIND_LABEL, OWNERSHIP, PLATFORM_LABEL, STAGES, TZ, fmtDate, formatStatusLabel, shortName, stageLabel,
+  AUDIT_LABEL, FORMAT_PLATFORMS, FORMAT_STATUSES, KIND_LABEL, OWNERSHIP, PLATFORM_LABEL, STAGES, TZ, fmtDate, formatStatusLabel, shortName, stageLabel,
   type DeliverableKind, type FormatStatus, type Platform, type Profile, type StageKey,
 } from "@/lib/types";
 
@@ -31,7 +33,7 @@ export default function SongPage({ params }: PageProps<"/songs/[code]">) {
 type Version = {
   id: string; version: number; status: string; drive_url: string; note: string | null; submitted_at: string; submitted_by: string;
   reviews: { decision: string; comments: string | null; reviewer_id: string; created_at: string }[];
-  audit_runs: { verdict: string; skill: string; report_md: string | null; created_at: string }[];
+  audit_runs: AuditRun[];
 };
 type Deliverable = {
   id: string; stage: StageKey; kind: DeliverableKind; slot: number; required: boolean;
@@ -63,9 +65,9 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
     .maybeSingle();
   if (!song) notFound();
 
-  const [delivR, creditsR, distR, slotsR, tasksR, commentsR, activityR, peopleR, rightsR, formatsR, typesR] = await Promise.all([
+  const [delivR, creditsR, distR, slotsR, tasksR, commentsR, activityR, peopleR, rightsR, formatsR, typesR, captionsR] = await Promise.all([
     db.from("deliverables")
-      .select("id, stage, kind, slot, required, assignee_id, checker_id, due_at, deliverable_versions(id, version, status, drive_url, note, submitted_at, submitted_by, reviews(decision, comments, reviewer_id, created_at), audit_runs(verdict, skill, report_md, created_at))")
+      .select("id, stage, kind, slot, required, assignee_id, checker_id, due_at, deliverable_versions(id, version, status, drive_url, note, submitted_at, submitted_by, reviews(decision, comments, reviewer_id, created_at), audit_runs(verdict, skill, findings, report_md, created_at))")
       .eq("song_id", song.id).order("kind").order("slot"),
     db.from("song_credits").select("id, role, name, as_credited").eq("song_id", song.id).order("role"),
     db.from("distribution_records").select("id, distributor, legacy, isrc, upc, catalog_number, release_date, dsp_status, source").eq("song_id", song.id),
@@ -79,6 +81,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
       .select("id, deliverable_id, kind, label, status, mandatory, owner_id, planned_at, went_live_at, live_url, drive_folder_url, notes, format_checklist(id, label, position, done_at, done_by), format_publications(id, platform, url, published_at, published_by)")
       .eq("song_id", song.id).order("created_at"),
     db.from("format_types").select("kind, label, stage, position").order("position"),
+    db.from("song_captions").select("captions, created_at, created_by, created_via").eq("song_id", song.id).order("created_at", { ascending: false }).limit(1),
   ]);
 
   const people = (peopleR.data ?? []) as Profile[];
@@ -310,6 +313,16 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
               </div>
             )}
               </> },
+              { key: "captions", label: "Captions", node: (
+                <CaptionsPanel
+                  code={song.code}
+                  canWrite={canWork}
+                  enabled={Boolean(process.env.ANTHROPIC_API_KEY)}
+                  latest={(captionsR.data?.[0]?.captions as CaptionSet | undefined) ?? null}
+                  when={captionsR.data?.[0] ? fmtDate(captionsR.data[0].created_at, { day: "numeric", month: "short" }) : undefined}
+                  by={captionsR.data?.[0] ? `${who(captionsR.data[0].created_by)}${captionsR.data[0].created_via === "agent" ? " (through an AI assistant)" : ""}` : undefined}
+                />
+              ) },
               { key: "tasks", label: "Tasks", count: (tasksR.data ?? []).filter((t) => t.status !== "done").length, node: <>
             <ul className="mb-3 space-y-1 text-sm">
               {(tasksR.data ?? []).map((t) => (
@@ -461,7 +474,6 @@ function DeliverableRow({
           <span className="text-sm font-medium">{KIND_LABEL[d.kind]}{multi ? ` ${d.slot}` : ""}</span>
           {!d.required && <Badge>optional</Badge>}
           {latest && <Badge tone={VERSION_TONE[latest.status]}>{VERSION_LABEL[latest.status]}</Badge>}
-          {audit && <Badge tone={audit.verdict === "pass" ? "green" : audit.verdict === "warn" ? "amber" : "red"}>audit: {audit.verdict}</Badge>}
         </div>
         <span className="text-xs text-muted">
           {d.assignee_id && <>maker {who(d.assignee_id)} · </>}
@@ -484,6 +496,9 @@ function DeliverableRow({
       )}
 
       <div className="mt-2 flex flex-wrap gap-2">
+        {latest && AUDIT_LABEL[d.kind] && (audit || canWork) && (
+          <AuditPanel versionId={latest.id} label={AUDIT_LABEL[d.kind]!} canRun={canWork && latest.status !== "approved"} audit={audit} />
+        )}
         {canCheck && latest?.status === "submitted" && !mine && (
           <ActionForm action={reviewVersion} className="flex w-full flex-wrap items-start gap-2">
             <input type="hidden" name="version_id" value={latest.id} />
@@ -502,7 +517,7 @@ function DeliverableRow({
               <Submit>Submit</Submit>
             </ActionForm>
             <p className="eyebrow my-3">or upload from your computer</p>
-            <DriveUpload deliverableId={d.id} withNote label="Upload to Drive & submit" />
+            <DriveUpload deliverableId={d.id} withNote label="Upload to Drive & submit" audit={d.kind === "lyrics" && !process.env.ANTHROPIC_API_KEY ? undefined : AUDIT_LABEL[d.kind]} />
           </details>
         )}
         {canCheck && (

@@ -247,3 +247,18 @@ export async function purgeAttendanceSelfies(today: string): Promise<{ removed: 
   }
   return { removed };
 }
+
+/** Reads a whole (small) file into memory; refuses anything over `maxBytes`. */
+export async function downloadBytes(id: string, maxBytes: number): Promise<Buffer> {
+  const res = await downloadFile(id);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length > maxBytes) throw new DriveError(`That file is too large to read here (${Math.round(buf.length / 1048576)} MB).`);
+  return buf;
+}
+
+/** The plain text of a Google Doc. */
+export async function exportDocText(id: string): Promise<string> {
+  const res = await fetch(`${API}/files/${id}/export?mimeType=text/plain`, { headers: { Authorization: `Bearer ${await accessToken()}` }, cache: "no-store" });
+  if (!res.ok) throw new DriveError("Couldn't read that Google Doc.");
+  return res.text();
+}

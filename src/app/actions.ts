@@ -23,7 +23,7 @@ const str = (fd: FormData, k: string) => {
   return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
 };
 
-function fail(message: string): ActionState {
+function fail(message: string): { error: string } {
   return { error: message };
 }
 
@@ -542,7 +542,8 @@ export async function startUpload(target: UploadTarget, file: { name: string; ty
   }
 }
 
-export async function finishUpload(target: UploadTarget, fileId: string, folderId: string, note?: string): Promise<ActionState> {
+export async function finishUpload(target: UploadTarget, fileId: string, folderId: string, note?: string): Promise<{ error?: string; ok?: string; versionId?: string }> {
+  let versionId: string | undefined;
   const { supabase, uid } = await ctx();
   try {
     const expected = await uploadFolder(supabase, target);
@@ -554,7 +555,7 @@ export async function finishUpload(target: UploadTarget, fileId: string, folderI
       const { error } = await supabase.from("songs").update({ cover_url: link }).eq("id", target.coverForSong);
       if (error) return fail(friendly(error));
     } else {
-      const { error } = await supabase.from("deliverable_versions").insert({
+      const { data, error } = await supabase.from("deliverable_versions").insert({
         deliverable_id: target.deliverableId!,
         drive_url: link,
         drive_file_id: file.id,
@@ -563,11 +564,12 @@ export async function finishUpload(target: UploadTarget, fileId: string, folderI
         md5: file.md5Checksum ?? null,
         note: note?.trim() || null,
         submitted_by: uid,
-      });
-      if (error) return fail(friendly(error));
+      }).select("id").single();
+      if (error) return { error: friendly(error) };
+      versionId = data.id as string;
     }
     refresh();
-    return { ok: target.coverForSong ? "Cover art saved." : "Uploaded and submitted for checking." };
+    return { ok: target.coverForSong ? "Cover art saved." : "Uploaded and submitted for checking.", versionId };
   } catch (e) {
     return fail(e instanceof Error ? e.message : "Couldn't record the upload.");
   }

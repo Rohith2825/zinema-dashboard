@@ -1,12 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { finishUpload, startUpload } from "@/app/actions";
 
-type Props = { deliverableId?: string; coverForSong?: string; label?: string; accept?: string; withNote?: boolean };
+type Props = { deliverableId?: string; coverForSong?: string; label?: string; accept?: string; withNote?: boolean; /** Name of the audit to run straight after the upload, if this kind of file has one. */ audit?: string };
 
 /** Uploads a file straight from the browser into the song's Google Drive folder, then records it. */
-export function DriveUpload({ deliverableId, coverForSong, label = "Upload a file", accept, withNote = false }: Props) {
+export function DriveUpload({ deliverableId, coverForSong, label = "Upload a file", accept, withNote = false, audit }: Props) {
+  const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState("");
   const [state, setState] = useState<{ phase: "idle" | "busy" | "done" | "error"; pct?: number; msg?: string; name?: string }>({ phase: "idle" });
@@ -36,6 +38,13 @@ export function DriveUpload({ deliverableId, coverForSong, label = "Upload a fil
     const done = await finishUpload(target, fileId, start.folderId!, note);
     if (done?.error) return setState({ phase: "error", msg: done.error });
     setNote("");
+    if (audit && done?.versionId) {
+      // Run the audit straight away so the report is there before a checker opens the file.
+      setState({ phase: "done", msg: `Uploaded. Running the ${audit.toLowerCase()}… you can leave this page.` });
+      const res = await fetch("/api/audit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ version_id: done.versionId }) }).catch(() => null);
+      router.refresh();
+      return setState({ phase: "done", msg: res?.ok ? `Uploaded and submitted. ${audit} is ready below.` : `Uploaded and submitted. The ${audit.toLowerCase()} didn't run; use the button to run it.` });
+    }
     setState({ phase: "done", msg: done?.ok ?? "Uploaded." });
   }
 

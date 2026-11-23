@@ -40,6 +40,9 @@ export const KIND_LABEL: Record<DeliverableKind, string> = {
   audio_only: "Audio only (no visual)",
 };
 
+/** Files that have an automatic audit, and what it is called. */
+export const AUDIT_LABEL: Partial<Record<DeliverableKind, string>> = { master_wav: "Mix audit", artwork: "Artwork audit", lyrics: "Lyric review" };
+
 export const FORMAT_STATUSES: { key: FormatStatus; label: string }[] = [
   { key: "planned", label: "Planned" },
   { key: "in_progress", label: "In progress" },
