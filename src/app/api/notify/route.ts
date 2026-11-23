@@ -20,6 +20,10 @@ export async function POST(request: Request) {
   if (!notice) return Response.json({ ok: true, sent: false }); // already sent, switched off, or not a real request
 
   const result = await sendEmail(notice.to_email, noticeEmail(notice));
-  if (!result.ok) console.error("notification email failed:", result.error);
+  if (!result.ok) {
+    console.error("notification email failed:", result.error);
+    // Don't leave it recorded as sent.
+    await supabase.rpc("release_notification_email", { p_id: body.id, p_token: body.token });
+  }
   return Response.json({ ok: result.ok, sent: result.ok, ...(result.ok ? {} : { reason: result.error }) }, { status: result.ok ? 200 : 502 });
 }
