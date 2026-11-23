@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SITE_URL } from "@/lib/site";
 import { ROLES, STAGES } from "@/lib/types";
+import { IsrcRules } from "@/components/isrc-key";
 
 /** The guidebook itself. Shown inside the dashboard at /help. */
 const SECTIONS = [
@@ -8,6 +9,7 @@ const SECTIONS = [
   ["roles", "Roles"],
   ["pipeline", "How a song moves"],
   ["formats", "Formats & publishing"],
+  ["isrc", "ISRC numbers"],
   ["files", "Files & Google Drive"],
   ["attendance", "Attendance"],
   ["ai", "Connect your AI"],
@@ -82,6 +84,12 @@ export function GuideContent({ stickyTop = "lg:top-24" }: { stickyTop?: string }
             <Section id="formats" title="Formats & publishing">
               <p>A song lives in many formats — vertical, carousel, lyric video, flagship music video, AI music video, visualizer, image-only video, audio. Add one at any time, even years after release.</p>
               <p>Each format has its own checklist, owner, planned date and files. When it goes out, tick where it was posted under <b>Published on</b> (Instagram, YouTube, Shorts, Spotify…) with the link. The first tick marks the format live and puts it on the calendar.</p>
+            </Section>
+
+            <Section id="isrc" title="ISRC numbers">
+              <p>An ISRC is the permanent ID of one recording or one video. Stores use it to count plays and pay royalties. Zinema has its own numbers and Zinema OS gives them out, so you never type or pick one. This is how to read them:</p>
+              <IsrcRules />
+              <p>You see the number next to the song title and beside each video format. On a song page, open <b>How to read the ISRC numbers</b> to see that song&apos;s own numbers explained part by part.</p>
             </Section>
 
             <Section id="files" title="Files & Google Drive">

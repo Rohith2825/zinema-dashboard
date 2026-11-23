@@ -12,6 +12,7 @@ import { Cover } from "@/components/cover";
 import { Tabs } from "@/components/tabs";
 import { DriveUpload } from "@/components/drive-upload";
 import { AuditPanel, type AuditRun } from "@/components/audit-panel";
+import { IsrcBreakdown, IsrcRules, readIsrc } from "@/components/isrc-key";
 import { CaptionsPanel, type CaptionSet } from "@/components/captions-panel";
 import { latestMetrics, youtubeConfigured } from "@/lib/performance";
 import { folderUrl } from "@/lib/site";
@@ -131,6 +132,21 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
                 </a>
               )}
             </div>
+            {song.isrc && (
+              <details className="well mt-3 max-w-2xl px-3 py-2.5">
+                <summary className="cursor-pointer text-xs font-medium text-brand-700">How to read the ISRC numbers</summary>
+                <div className="mt-3 space-y-4">
+                  <IsrcBreakdown code={song.isrc} title="This song (audio)" />
+                  {(formatsR.data ?? []).filter((f) => f.isrc && readIsrc(f.isrc)).map((f) => (
+                    <IsrcBreakdown key={f.id} code={f.isrc!} title={`${f.label} (video)`} />
+                  ))}
+                  <div className="border-t border-black/5 pt-3">
+                    <p className="eyebrow mb-2">The rule</p>
+                    <IsrcRules />
+                  </div>
+                </div>
+              </details>
+            )}
           </div>
           </div>
           {canApprove && song.current_stage !== "live" && (
