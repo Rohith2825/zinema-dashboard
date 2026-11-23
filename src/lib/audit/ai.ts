@@ -181,7 +181,10 @@ const Captions = z.object({
 });
 export type Captions = z.infer<typeof Captions>;
 
-export function writeCaptions(song: SongContext, o: { lyrics?: string | null; brief?: string | null }) {
+export function writeCaptions(song: SongContext, o: { lyrics?: string | null; brief?: string | null; hashtags?: { tag: string; posts: number }[] }) {
+  const research = o.hashtags?.length
+    ? `\n\nHashtags found on Instagram just now, with how many posts each has:\n${o.hashtags.map((h) => `#${h.tag} (${h.posts.toLocaleString("en-US")} posts)`).join("\n")}\nChoose most of the Instagram hashtags from this list: two or three large ones (over 1 million posts) for reach and the rest mid-sized (10,000 to 500,000) where a new post can still be seen. Skip any that don't fit this song. You may add one or two tags for the song title and artist.`
+    : "";
   return ask(
     Captions,
     `${LABEL} You write the social captions for a song. A person on the team will review them before anything is posted.
@@ -189,6 +192,6 @@ export function writeCaptions(song: SongContext, o: { lyrics?: string | null; br
 Write the way this page's audience talks: for a Tamil, Hindi or Marathi page, mix that language (in its own script) with easy English the way Indian music pages do; for Spiritual, keep it warm and respectful with no slang; for Community, friendly and inclusive. Lead with feeling or a lyric line, not with "New song out now".
 Credits must be exact: use only the names, ISRC, date and links given below, spelled exactly as given. If something isn't given, leave it out rather than guess. Do not invent streaming numbers, quotes or awards.
 Instagram: a first line that works before "…more", two or three short lines, then a call to action. YouTube: a searchable title in the pattern people search ("Song | Artist | Language Song"), and a description with the credits block. X: one punchy line.`,
-    [{ type: "text", text: `${about(song)}${o.brief ? `\n\nWhat the team wants from these captions: ${o.brief}` : ""}${o.lyrics ? `\n\n<lyric>\n${o.lyrics}\n</lyric>` : ""}` }],
+    [{ type: "text", text: `${about(song)}${o.brief ? `\n\nWhat the team wants from these captions: ${o.brief}` : ""}${research}${o.lyrics ? `\n\n<lyric>\n${o.lyrics}\n</lyric>` : ""}` }],
   );
 }

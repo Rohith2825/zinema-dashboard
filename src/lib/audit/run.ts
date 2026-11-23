@@ -3,6 +3,7 @@ import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DriveError, downloadBytes, downloadFile, driveThumbnail, exportDocText, getFile, listFolder, readRange } from "@/lib/google-drive";
 import { KIND_LABEL, type DeliverableKind } from "@/lib/types";
+import { hashtagIdeas, trendKeywords } from "@/lib/trends";
 import { AiError, aiConfigured, reviewArtwork, reviewCarousel, reviewLyrics, reviewVideoFrame, writeCaptions, type Captions, type SongContext } from "./ai";
 import { judgeArtwork, judgeCarousel, judgeMix, judgeVideo, reportMd, verdictOf, type ArtMetrics, type Finding, type Slide, type Status, type Verdict } from "./judge";
 import { NotVideoError, probeVideo } from "./mp4";
@@ -263,7 +264,11 @@ export async function draftCaptions(supabase: SupabaseClient, uid: string, songC
   const { data: can } = await supabase.rpc("can_work_on_song", { p_song: song.id });
   if (!can) throw new AuditError("You can view this song but not write captions for it.");
   try {
-    const captions = await writeCaptions(await context(supabase, song), { lyrics: await songLyrics(supabase, song.id), brief });
+    const ctx = await context(supabase, song);
+    const [lyrics, hashtags] = await Promise.all([songLyrics(supabase, song.id), hashtagIdeas(trendKeywords(ctx))]);
+    const written = await writeCaptions(ctx, { lyrics, brief, hashtags });
+    // Keep what the hashtag choice was based on, so the team can see it was checked.
+    const captions = { ...written, hashtag_research: hashtags.slice(0, 12) };
     const { error } = await supabase.from("song_captions").insert({ song_id: song.id, captions, brief, created_by: uid, created_via: via });
     if (error) throw new AuditError(error.message);
     return captions;

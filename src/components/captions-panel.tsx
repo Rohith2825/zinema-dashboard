@@ -10,6 +10,7 @@ export type CaptionSet = {
   x?: { post: string };
   on_screen_hooks?: string[];
   romanised_instagram_caption?: string;
+  hashtag_research?: { tag: string; posts: number }[];
 };
 
 function Block({ title, text }: { title: string; text: string }) {
@@ -77,6 +78,12 @@ export function CaptionsPanel({ code, canWrite, enabled, latest, when, by }: { c
       {c && (
         <>
           <p className="text-xs text-muted">Draft{by ? ` by ${by}` : ""}{when ? ` · ${when}` : ""}. Read it before posting: check names and links.</p>
+          {c.hashtag_research && c.hashtag_research.length > 0 && (
+            <p className="text-xs text-muted">
+              Hashtags were checked on Instagram when this was written. Biggest found:{" "}
+              {c.hashtag_research.slice(0, 5).map((h) => `#${h.tag} (${Intl.NumberFormat("en", { notation: "compact" }).format(h.posts)} posts)`).join(", ")}.
+            </p>
+          )}
           <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-2">
             <Block title="Instagram caption" text={[c.instagram?.caption, tags].filter(Boolean).join("\n\n")} />
             <Block title="Instagram caption (English letters)" text={c.romanised_instagram_caption ?? ""} />
