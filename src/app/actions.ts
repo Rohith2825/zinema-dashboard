@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { STAGES, type ActionState } from "@/lib/types";
 import { parseDriveId } from "@/lib/drive";
 import { headers } from "next/headers";
-import { DriveError, attendanceFolder, createUploadSession, driveConfigured, ensureFolder, ensureSongFolder, getFile, shareWithLink } from "@/lib/google-drive";
+import { DriveError, createUploadSession, driveConfigured, ensureFolder, ensureSongFolder, getFile, shareWithLink } from "@/lib/google-drive";
 import { newToken, tokensEnabled } from "@/lib/mcp/auth";
 import { spotifyConfigured, syncSpotify } from "@/lib/spotify";
 import { PerformanceError, pullYouTube } from "@/lib/performance";
@@ -626,95 +626,38 @@ export async function syncFromSpotify(): Promise<ActionState> {
 }
 
 // ─────────── Attendance ───────────
-// The location / office geofence is parked for now (removed 2026-11-23): enrolled people check
-// in / out with a time-stamped selfie from anywhere. Selfies are stored privately in Drive.
-const istNow = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Kolkata", dateStyle: "short", timeStyle: "medium" }).format(new Date()); // 2026-11-12 09:31:05
+// Kept simple on purpose: one tap to check in with a note of the day's tasks, one tap to check out.
+// No selfie and no location. The database function does the once-a-day checks.
+const attendanceError = (m: string) => (/^(Sign in first|You don't have access|Check in first|Already done|Nothing to update)/.test(m) ? m : "Couldn't save that. Try again.");
 
-async function selfieFolder(supabase: Awaited<ReturnType<typeof ctx>>["supabase"], uid: string) {
-  const { data: me } = await supabase.from("profiles").select("full_name, email").eq("id", uid).single();
-  if (!me) throw new DriveError("Profile not found.");
-  return attendanceFolder(me, istNow().slice(0, 7));
-}
-
-export async function startSelfieUpload(kind: "check_in" | "check_out", size: number): Promise<UploadStart> {
-  const { supabase, uid } = await ctx();
-  if (!driveConfigured()) return { error: "Google Drive isn't connected, so selfies can't be saved yet." };
-  const { data: enrolled } = await supabase.from("attendance_members").select("user_id").eq("user_id", uid).maybeSingle();
-  if (!enrolled) return { error: "Attendance isn't switched on for you." };
-  try {
-    const folderId = await selfieFolder(supabase, uid);
-    const h = await headers();
-    const origin = h.get("origin") ?? `https://${h.get("host")}`;
-    const name = `${istNow().replace(/:/g, "-")} ${kind === "check_in" ? "check-in" : "check-out"}.jpg`;
-    return { sessionUrl: await createUploadSession({ name, mimeType: "image/jpeg", size, parentId: folderId, origin }), folderId };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Couldn't start the selfie upload." };
-  }
-}
-
-export async function markAttendance(p: { kind: "check_in" | "check_out"; fileId: string; folderId: string }): Promise<ActionState> {
-  const { supabase, uid } = await ctx();
-  try {
-    const folderId = await selfieFolder(supabase, uid);
-    const file = await getFile(p.fileId);
-    if (folderId !== p.folderId || !file.parents?.includes(folderId) || !file.mimeType.startsWith("image/")) return fail("That selfie wasn't saved to your attendance folder.");
-  } catch (e) {
-    return fail(e instanceof Error ? e.message : "Couldn't verify the selfie.");
-  }
-  const { error } = await supabase.rpc("mark_attendance", { p_kind: p.kind, p_selfie_file_id: p.fileId });
-  if (error) return fail(error.message);
-  refresh();
-  return { ok: p.kind === "check_in" ? "Checked in. Have a good day." : "Checked out." };
-}
-
-/** Reads lat/lng out of a Google Maps link (short links are followed) or a "lat, lng" pair. */
-async function coordsFrom(input: string): Promise<{ lat: number; lng: number } | null> {
-  const pick = (text: string) => {
-    const m =
-      text.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) ||
-      text.match(/[?&](?:q|query|ll|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/) ||
-      text.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
-      text.match(/^\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*$/);
-    return m ? { lat: Number(m[1]), lng: Number(m[2]) } : null;
-  };
-  const direct = pick(input);
-  if (direct) return direct;
-  try {
-    const u = new URL(input);
-    if (!/(^|\.)(google\.[a-z.]+|goo\.gl)$/.test(u.hostname)) return null;
-    const res = await fetch(u, { redirect: "follow", cache: "no-store", headers: { "User-Agent": "Mozilla/5.0" } });
-    return pick(res.url) ?? pick((await res.text()).slice(0, 400_000));
-  } catch {
-    return null;
-  }
-}
-
-export async function addOffice(_: ActionState, fd: FormData): Promise<ActionState> {
+export async function checkIn(_: ActionState, fd: FormData): Promise<ActionState> {
   const { supabase } = await ctx();
-  const name = str(fd, "name");
-  const where = str(fd, "location");
-  if (!name || !where) return fail("Give the office a name and a Google Maps link (or “lat, lng”).");
-  const c = await coordsFrom(where);
-  if (!c) return fail("Couldn't read a location from that. Open the place in Google Maps, copy the link from the address bar, or paste “13.0827, 80.2707”.");
-  const { error } = await supabase.from("office_locations").insert({
-    name,
-    address: str(fd, "address"),
-    maps_url: where.startsWith("http") ? where : `https://www.google.com/maps?q=${c.lat},${c.lng}`,
-    lat: c.lat,
-    lng: c.lng,
-    radius_m: Number(str(fd, "radius_m")) || 1000,
-  });
-  if (error) return fail(friendly(error));
+  const note = str(fd, "note");
+  if (!note) return fail("Write what you plan to work on today, then check in.");
+  const { error } = await supabase.rpc("log_attendance", { p_kind: "check_in", p_note: note });
+  if (error) return fail(attendanceError(error.message));
   refresh();
-  return { ok: `Added at ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}.` };
+  return { ok: "Checked in. Have a good day." };
 }
 
-export async function setOfficeActive(_: ActionState, fd: FormData): Promise<ActionState> {
+export async function checkOut(_: ActionState, fd: FormData): Promise<ActionState> {
   const { supabase } = await ctx();
-  const { error } = await supabase.from("office_locations").update({ active: str(fd, "active") === "1" }).eq("id", str(fd, "id")!);
-  if (error) return fail(friendly(error));
+  const { error } = await supabase.rpc("log_attendance", { p_kind: "check_out", p_note: str(fd, "note") });
+  if (error) return fail(attendanceError(error.message));
   refresh();
-  return undefined;
+  return { ok: "Checked out. See you tomorrow." };
+}
+
+/** Updates today's task list (or the check-out note) later in the day. */
+export async function saveDayNote(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  const kind = str(fd, "kind") === "check_out" ? "check_out" : "check_in";
+  const note = str(fd, "note");
+  if (kind === "check_in" && !note) return fail("Your task list can't be empty.");
+  const { error } = await supabase.rpc("set_attendance_note", { p_kind: kind, p_note: note ?? "" });
+  if (error) return fail(attendanceError(error.message));
+  refresh();
+  return { ok: "Saved." };
 }
 
 export async function setAttendanceRequired(_: ActionState, fd: FormData): Promise<ActionState> {

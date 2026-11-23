@@ -98,13 +98,13 @@ export function GuideContent({ stickyTop = "lg:top-24" }: { stickyTop?: string }
             </Section>
 
             <Section id="attendance" title="Attendance">
-              <p>If an owner has switched attendance on for you, <b>Attendance</b> appears as your daily check-in.</p>
+              <p><b>Attendance</b> is a simple daily log. No photo and no location.</p>
               <ol className="space-y-4">
-                <Step n={1}>Open <b>Attendance</b> at the office and press <b>Use my location</b>. You need to be within the office&apos;s range (usually 1 km).</Step>
-                <Step n={2}>Take a selfie. It&apos;s stamped with the time and your location and saved privately — only you and the owners can see it.</Step>
-                <Step n={3}>Check out the same way when you leave.</Step>
+                <Step n={1}>When you start, open <b>Attendance</b>, write what you plan to work on today (one task per line) and press <b>Check in</b>.</Step>
+                <Step n={2}>You can change your task list any time during the day.</Step>
+                <Step n={3}>When you finish, press <b>Check out</b>. You can add a line on what got done.</Step>
               </ol>
-              <p className="well p-4 text-sm">Allow location and camera for this site when your browser asks. On a phone, turn on precise location for the best result.</p>
+              <p className="well p-4 text-sm">You see your own last 30 days. Owners see everyone&apos;s check-in times and task notes for any day.</p>
             </Section>
 
             <Section id="ai" title="Connect your AI">
