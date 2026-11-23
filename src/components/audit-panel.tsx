@@ -19,6 +19,8 @@ const WAIT: Record<string, string> = {
   "Mix audit": "Measuring loudness, peaks and clipping. A full master takes up to a minute.",
   "Artwork audit": "Checking size and colour, then looking at the cover. About half a minute.",
   "Lyric review": "Reading the lyric. About a minute.",
+  "Carousel audit": "Checking every slide's size, then reading the slides. About a minute.",
+  "Video audit": "Reading the video's size, length and sound. A few seconds.",
 };
 
 /** Notes written by the reviewer (kept after the checklist in the saved report). */

@@ -134,3 +134,71 @@ export function reportMd(title: string, findings: Finding[], notes?: string): st
   if (notes) lines.push("", notes);
   return lines.join("\n");
 }
+
+// ───────────── Video ─────────────
+export type VideoRules = {
+  aspect: [number, number]; min_short_px: number; warn_short_px: number; fps: [number, number];
+  duration_s: [number, number]; duration_warn_s: number; min_mbps: number; codecs: string[];
+};
+export const VERTICAL_DEFAULTS: VideoRules = { aspect: [9, 16], min_short_px: 720, warn_short_px: 1080, fps: [24, 60], duration_s: [5, 90], duration_warn_s: 180, min_mbps: 3, codecs: ["H.264", "H.265 (HEVC)"] };
+export const LANDSCAPE_DEFAULTS: VideoRules = { aspect: [16, 9], min_short_px: 720, warn_short_px: 1080, fps: [24, 60], duration_s: [20, 900], duration_warn_s: 1200, min_mbps: 5, codecs: ["H.264", "H.265 (HEVC)", "ProRes"] };
+export type VideoFacts = { width: number; height: number; duration_s: number; fps: number | null; video_codec: string | null; has_audio: boolean; audio_codec: string | null; bitrate_mbps: number | null; size_bytes: number; container: string };
+
+export function judgeVideo(m: VideoFacts, rules: Partial<VideoRules> | null, vertical: boolean, songDurationS?: number | null): Finding[] {
+  const r = { ...(vertical ? VERTICAL_DEFAULTS : LANDSCAPE_DEFAULTS), ...(rules ?? {}) };
+  const out: Finding[] = [];
+  const add = (check: string, status: Status, value: string, target: string, fix?: string) => out.push({ check, status, value, target, ...(fix && status !== "pass" ? { fix } : {}) });
+  const [aw, ah] = r.aspect, want = aw / ah, got = m.width / m.height;
+  const shape = `${aw}:${ah} (${vertical ? "upright" : "wide"})`;
+
+  add("File type", "pass", m.container.toUpperCase(), "MP4 or MOV");
+  add("Shape", Math.abs(got - want) / want <= 0.02 ? "pass" : "fail", `${m.width} × ${m.height}`, shape,
+    vertical ? "Reels and Shorts need an upright 9:16 video (1080 × 1920). Re-export in that shape, don't just rotate." : "Export the video in 16:9 (1920 × 1080).");
+  const short = Math.min(m.width, m.height);
+  add("Sharpness", short >= r.warn_short_px ? "pass" : short >= r.min_short_px ? "warn" : "fail", `${short}p`, `${r.warn_short_px}p or more`,
+    short >= r.min_short_px ? `It will look soft on new phones. Export at ${vertical ? "1080 × 1920" : "1920 × 1080"}.` : `Too small. Export at ${vertical ? "1080 × 1920" : "1920 × 1080"}.`);
+  if (m.fps !== null)
+    add("Frame rate", m.fps >= r.fps[0] - 0.1 && m.fps <= r.fps[1] + 0.1 ? "pass" : "warn", `${n(m.fps, m.fps % 1 ? 2 : 0)} fps`, `${r.fps[0]} to ${r.fps[1]} fps`,
+      m.fps < r.fps[0] ? "Movement will look jerky. Export at 25 or 30 fps." : "Very high frame rates get reduced by the apps. Export at 30 or 60 fps.");
+  const d = m.duration_s, [d0, d1] = r.duration_s;
+  add("Length", d >= d0 && d <= d1 ? "pass" : d <= r.duration_warn_s && d >= d0 / 2 ? "warn" : "fail", clock(d), `${clock(d0)} to ${clock(d1)}`,
+    d < d0 ? "This is very short. Check the export didn't get cut off." : vertical ? "Instagram shows reels over 90 seconds to fewer people, and Shorts stop at 3 minutes. Cut it shorter." : "Longer than expected for this kind of video. Check it's the right file.");
+  if (!vertical && songDurationS)
+    add("Matches the song", Math.abs(d - songDurationS) <= 8 ? "pass" : "warn", clock(d), `about ${clock(songDurationS)} (the song's length)`,
+      "The video is a different length from the song. Check the full song is in it, with no long blank start or end.");
+  add("Sound", m.has_audio ? "pass" : "fail", m.has_audio ? m.audio_codec ?? "yes" : "no sound track", "has sound", "The video has no sound. Export it again with the song's audio included.");
+  if (m.video_codec)
+    add("Video format", r.codecs.includes(m.video_codec) ? "pass" : "warn", m.video_codec, r.codecs.slice(0, 2).join(" or "), "Some apps reject or re-compress this format badly. Export as H.264 MP4.");
+  if (m.bitrate_mbps !== null)
+    add("Quality (bitrate)", m.bitrate_mbps >= r.min_mbps ? "pass" : "warn", `${n(m.bitrate_mbps)} Mbps`, `${r.min_mbps} Mbps or more`,
+      "The file is heavily compressed and may look blocky after the apps compress it again. Export at a higher quality setting.");
+  add("File size", "info", `${(m.size_bytes / 1048576).toFixed(m.size_bytes > 10485760 ? 0 : 1)} MB`, "for information");
+  return out;
+}
+
+// ───────────── Carousel ─────────────
+export type CarouselRules = { slides: [number, number]; ratios: [number, number][]; min_width_px: number };
+export const CAROUSEL_DEFAULTS: CarouselRules = { slides: [3, 20], ratios: [[4, 5], [1, 1], [3, 4]], min_width_px: 1080 };
+export type Slide = { name: string; width: number; height: number; colour: string };
+
+export function judgeCarousel(slides: Slide[], rules: Partial<CarouselRules> | null): Finding[] {
+  const r = { ...CAROUSEL_DEFAULTS, ...(rules ?? {}) };
+  const out: Finding[] = [];
+  const add = (check: string, status: Status, value: string, target: string, fix?: string) => out.push({ check, status, value, target, ...(fix && status !== "pass" ? { fix } : {}) });
+  const names = (xs: Slide[]) => xs.slice(0, 4).map((s) => s.name).join(", ") + (xs.length > 4 ? ` and ${xs.length - 4} more` : "");
+  const shapes = r.ratios.map(([a, b]) => `${a}:${b}`).join(", ");
+
+  add("Slides", slides.length >= r.slides[0] && slides.length <= r.slides[1] ? "pass" : slides.length > r.slides[1] ? "fail" : "warn", `${slides.length}`, `${r.slides[0]} to ${r.slides[1]}`,
+    slides.length > r.slides[1] ? `Instagram takes at most ${r.slides[1]} slides. Remove some.` : `A carousel works best with at least ${r.slides[0]} slides. Put all the slide images in the folder you submit.`);
+  const sizes = new Set(slides.map((s) => `${s.width} × ${s.height}`));
+  add("Same size", sizes.size === 1 ? "pass" : "fail", sizes.size === 1 ? [...sizes][0] : `${sizes.size} different sizes`, "every slide the same size",
+    "Instagram crops every slide to match the first one, so text gets cut off. Export all slides at one size.");
+  const wrong = slides.filter((s) => !r.ratios.some(([a, b]) => Math.abs(s.width / s.height - a / b) / (a / b) <= 0.01));
+  add("Shape", wrong.length ? "fail" : "pass", wrong.length ? `wrong shape: ${names(wrong)}` : "ok", shapes, "Use 1080 × 1350 (4:5), which fills the most screen, or 1080 × 1080 (square).");
+  const small = slides.filter((s) => s.width < r.min_width_px);
+  add("Sharpness", small.length ? "warn" : "pass", small.length ? `under ${r.min_width_px} px wide: ${names(small)}` : `${Math.min(...slides.map((s) => s.width))} px wide or more`, `${r.min_width_px} px wide or more`,
+    "Export the slides at 1080 px wide or more so text stays sharp.");
+  const colour = slides.filter((s) => s.colour !== "rgb");
+  add("Colour", colour.length ? "fail" : "pass", colour.length ? `not RGB: ${names(colour)}` : "RGB", "RGB", "Export the slides in RGB colour (not CMYK print colour).");
+  return out;
+}

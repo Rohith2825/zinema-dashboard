@@ -262,3 +262,18 @@ export async function exportDocText(id: string): Promise<string> {
   if (!res.ok) throw new DriveError("Couldn't read that Google Doc.");
   return res.text();
 }
+
+/** Reads one byte range of a file (inclusive), so a large video's header can be read without downloading it. */
+export async function readRange(id: string, start: number, end: number): Promise<Buffer> {
+  const res = await fetch(`${API}/files/${id}?alt=media&${ALL}`, { headers: { Authorization: `Bearer ${await accessToken()}`, Range: `bytes=${start}-${end}` }, cache: "no-store" });
+  if (!res.ok) throw new DriveError("Couldn't load the file from Drive.");
+  return Buffer.from(await res.arrayBuffer());
+}
+
+/** The preview picture Drive makes for a video or image, if it has one yet. */
+export async function driveThumbnail(id: string, width = 1024): Promise<Buffer | null> {
+  const meta = await call<{ thumbnailLink?: string }>(`${API}/files/${id}?fields=thumbnailLink&${ALL}`);
+  if (!meta.thumbnailLink) return null;
+  const res = await fetch(meta.thumbnailLink.replace(/=s\d+$/, `=s${width}`), { headers: { Authorization: `Bearer ${await accessToken()}` }, cache: "no-store" });
+  return res.ok ? Buffer.from(await res.arrayBuffer()) : null;
+}

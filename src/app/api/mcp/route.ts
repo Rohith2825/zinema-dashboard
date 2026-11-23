@@ -18,7 +18,8 @@ const INSTRUCTIONS = `Zinema OS is Zinema Music's song pipeline: lyrics → musi
 Start with whoami. Songs are addressed by code (TAM-0007). get_song returns the ids you need for formats, checklist items and file versions.
 Rules the server enforces: the core team submits files, a different core member or an admin checks them (never your own), only admins and owners advance a stage, and every song needs 3 carousels + 3 verticals. If a tool says you lack permission, tell the user rather than trying another route.
 Files live in Google Drive: use save_to_drive to file anything you produce into the song's folder. Dates are India time.
-Audits: run_audit measures a master (loudness, true peak, clipping) or checks artwork in code, so quote its numbers and never estimate your own. For lyrics, read them with get_lyrics and save your review with record_audit. Captions you write go on the song with save_captions. Audits and captions are recommendations; a person approves.`;
+Audits: run_audit measures a master (loudness, true peak, clipping) or checks artwork in code, so quote its numbers and never estimate your own. For lyrics, read them with get_lyrics and save your review with record_audit. Captions you write go on the song with save_captions. Audits and captions are recommendations; a person approves.
+standup lists what is waiting, late or blocked today. performance returns saved numbers; pull_performance fetches fresh YouTube numbers and record_metric saves a number you read from another platform.`;
 
 // run_audit reads a full master from Drive and measures it.
 export const maxDuration = 300;

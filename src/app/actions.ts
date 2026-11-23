@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { DriveError, attendanceFolder, createUploadSession, driveConfigured, ensureFolder, ensureSongFolder, getFile, shareWithLink } from "@/lib/google-drive";
 import { newToken, tokensEnabled } from "@/lib/mcp/auth";
 import { spotifyConfigured, syncSpotify } from "@/lib/spotify";
+import { PerformanceError, pullYouTube } from "@/lib/performance";
 
 async function ctx() {
   const supabase = await createClient();
@@ -736,4 +737,19 @@ export async function toggleAttendanceRequired(userId: string, required: boolean
   if (error) return fail(friendly(error));
   refresh();
   return undefined;
+}
+
+// ─────────── Performance ───────────
+/** Saves today's YouTube views, likes and comments for a song's published YouTube links. */
+export async function refreshPerformance(_: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await ctx();
+  try {
+    const out = await pullYouTube(supabase, str(fd, "song_id") ?? undefined);
+    refresh();
+    if (!out.videos) return fail("No YouTube links are marked as published on this song yet. Mark a format as published on YouTube first.");
+    return { ok: `Saved numbers for ${out.videos} YouTube video${out.videos === 1 ? "" : "s"}.${out.skipped.length ? ` ${out.skipped.length} link(s) couldn't be read.` : ""}` };
+  } catch (e) {
+    if (e instanceof PerformanceError) return fail(e.message);
+    throw e;
+  }
 }

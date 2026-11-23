@@ -90,6 +90,56 @@ You are advising a person who makes the final call, so say what you see.`,
   );
 }
 
+// ───────────── Carousel ─────────────
+const Point = z.object({ status: Level, found: z.string(), fix: z.string().describe("What to change. Empty when status is pass.") });
+const CarouselReview = z.object({
+  first_slide: Point.describe("Would the first slide make someone stop scrolling and swipe?"),
+  story: Point.describe("Do the slides follow on from one another, each giving a reason to swipe again?"),
+  readability: Point.describe("Is the text big, short and high-contrast enough to read on a phone? Name the slide numbers that fail."),
+  mistakes: Point.describe("Spelling mistakes, wrong names, text cut off at the edges. Quote them with the slide number. 'Nothing found' if clean."),
+  last_slide: Point.describe("Does the last slide tell people what to do (listen, save, share, follow)?"),
+  consistency: Point.describe("Same fonts, colours and style across slides, and it looks like the label's other posts."),
+  summary: z.string().describe("Two or three sentences: is it ready to post, and the one most useful improvement."),
+});
+export type CarouselReview = z.infer<typeof CarouselReview>;
+
+export function reviewCarousel(slides: Buffer[], song: SongContext) {
+  return ask(
+    CarouselReview,
+    `${LABEL} You check an Instagram carousel for a song before it is posted. ${PLAIN}
+
+The images are the slides in posting order; refer to them as "slide 1", "slide 2". Compare any song title, artist name or lyric on the slides with the song details given, and report differences as mistakes (a different script or a stylised spelling of the same name is fine). Use "fail" only for something that should not be posted as it is, such as a wrong name or unreadable text; "warn" for things worth improving.
+You are advising the designer and the person who checks the post; they decide.`,
+    [
+      ...slides.map((b): Anthropic.Beta.BetaContentBlockParam => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: b.toString("base64") } })),
+      { type: "text", text: `${about(song)}\n\nAbove: ${slides.length} slide${slides.length === 1 ? "" : "s"}, scaled down. Pixel sizes are checked separately, so don't comment on those.` },
+    ],
+  );
+}
+
+// ───────────── Video (one preview frame) ─────────────
+const FrameReview = z.object({
+  text_safe_zone: Point.describe("For an upright video: is any text or face inside the top 12% or bottom 25% of the frame, where the app's buttons and caption cover it? For a wide video: is text too close to the edges?"),
+  readability: Point.describe("Can the on-screen text be read on a phone? 'No text in this frame' is a pass."),
+  mistakes: Point.describe("Spelling mistakes or wrong names in on-screen text, compared with the song details and lyric. Quote them. 'Nothing found' if clean."),
+  picture: Point.describe("Blur, pixelation, stretching, black bars, a watermark from an editing app or another platform's logo."),
+  summary: z.string().describe("One or two sentences about this frame."),
+});
+export type FrameReview = z.infer<typeof FrameReview>;
+
+export function reviewVideoFrame(frame: Buffer, song: SongContext, o: { vertical: boolean; lyrics?: string | null }) {
+  return ask(
+    FrameReview,
+    `${LABEL} You look at one preview frame from a ${o.vertical ? "short upright video (reel / short)" : "wide video (lyric video, visualizer or music video)"} for a song, before a person checks the whole video. ${PLAIN}
+
+You can see only this one frame, so judge only what is in it and never guess about the rest of the video, its pacing or its sound. A watermark from an editing app or another platform's logo is a "fail" (the apps hide such videos); other problems are usually "warn".`,
+    [
+      { type: "image", source: { type: "base64", media_type: "image/jpeg", data: frame.toString("base64") } },
+      { type: "text", text: `${about(song)}${o.lyrics ? `\n\n<lyric>\n${o.lyrics}\n</lyric>` : ""}\n\nThe image above is one preview frame of the video, scaled down.` },
+    ],
+  );
+}
+
 // ───────────── Lyrics ─────────────
 const Score = z.number().describe("Whole number from 1 (weak) to 10 (excellent).");
 const LyricReview = z.object({

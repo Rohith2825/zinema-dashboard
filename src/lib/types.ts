@@ -41,7 +41,10 @@ export const KIND_LABEL: Record<DeliverableKind, string> = {
 };
 
 /** Files that have an automatic audit, and what it is called. */
-export const AUDIT_LABEL: Partial<Record<DeliverableKind, string>> = { master_wav: "Mix audit", artwork: "Artwork audit", lyrics: "Lyric review" };
+export const AUDIT_LABEL: Partial<Record<DeliverableKind, string>> = {
+  master_wav: "Mix audit", artwork: "Artwork audit", lyrics: "Lyric review", carousel: "Carousel audit",
+  vertical: "Video audit", lyric_video: "Video audit", visualizer: "Video audit", music_video: "Video audit", ai_music_video: "Video audit",
+};
 
 export const FORMAT_STATUSES: { key: FormatStatus; label: string }[] = [
   { key: "planned", label: "Planned" },

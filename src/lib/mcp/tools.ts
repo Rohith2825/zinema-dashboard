@@ -3,6 +3,8 @@ import { parseDriveId } from "@/lib/drive";
 import { DriveError, driveConfigured, ensureFolder, ensureSongFolder, folderUrl, getFile, listFolder, uploadBytes } from "@/lib/google-drive";
 import { SITE_URL } from "@/lib/site";
 import { aiConfigured } from "@/lib/audit/ai";
+import { PerformanceError, latestMetrics, pullYouTube, youtubeConfigured } from "@/lib/performance";
+import { buildStandup } from "@/lib/standup";
 import { AuditError, draftCaptions, readLyrics, runAudit } from "@/lib/audit/run";
 import { spotifyConfigured, syncSpotify } from "@/lib/spotify";
 import { FORMAT_PLATFORMS, KIND_LABEL, PLATFORM_LABEL, STAGES } from "@/lib/types";
@@ -647,12 +649,90 @@ export const TOOLS: Tool[] = [
     },
   },
 
+  // ───────────── Stand-up & performance ─────────────
+  {
+    name: "standup",
+    title: "Daily stand-up",
+    description:
+      "What needs attention today on the pages this person can see: songs releasing in the next 14 days and what they still miss, files waiting for a check (with how long and who), files waiting for a new version, files past their due date, and tasks that are late or blocked. Worked out from the data, so report it as it is. Use it for 'what's stuck', 'daily stand-up', 'what should we chase today'.",
+    inputSchema: { type: "object", properties: { page: s("Only this page, e.g. tamil (optional)") } },
+    readOnly: true,
+    async run(ctx, a) {
+      const page = str(a, "page");
+      const name = page ? (await pageBy(ctx, page)).name.replace("Zinema.music ", "").replace("Zinema.music", "Main") : undefined;
+      return buildStandup(ctx.supabase, name);
+    },
+  },
+  {
+    name: "performance",
+    title: "Performance numbers",
+    description:
+      "The newest saved numbers (views, likes, comments, streams…) for one song or for all songs, each with the change over about a week when there is an earlier reading. Use it for 'what worked this week'. Numbers come only from what has been saved: call pull_performance first for fresh YouTube numbers.",
+    inputSchema: { type: "object", properties: { code: s("Song code (omit for all songs)") } },
+    readOnly: true,
+    async run(ctx, a) {
+      const code = str(a, "code");
+      const song = code ? await songByCode(ctx, code) : null;
+      const lines = await latestMetrics(ctx.supabase, song?.id);
+      const songs = check(await ctx.supabase.from("songs").select("id, code, title"));
+      const by = new Map((songs ?? []).map((x) => [x.id as string, x]));
+      return {
+        youtube_pull_available: youtubeConfigured(),
+        numbers: lines.map(({ song_id, ...m }) => ({ code: by.get(song_id)?.code, title: by.get(song_id)?.title, ...m })).sort((x, y) => (y.change_7d ?? 0) - (x.change_7d ?? 0)),
+      };
+    },
+  },
+  {
+    name: "pull_performance",
+    title: "Get today's YouTube numbers",
+    description: "Reads today's views, likes and comments from YouTube for every YouTube link marked as published (one song, or all songs) and saves them. Run it about once a week so the weekly change can be shown.",
+    inputSchema: { type: "object", properties: { code: s("Song code (omit for all songs)") } },
+    async run(ctx, a) {
+      const code = str(a, "code");
+      try {
+        return await pullYouTube(ctx.supabase, code ? (await songByCode(ctx, code)).id : undefined);
+      } catch (e) {
+        if (e instanceof PerformanceError) throw new ToolError(e.message);
+        throw e;
+      }
+    },
+  },
+  {
+    name: "record_metric",
+    title: "Save a performance number",
+    description:
+      "Save a number you read from a platform's own insights (for example Instagram reel views or Spotify streams) on a song, dated today or on a given day. Only save numbers you actually read from the platform or were given by the user; never estimates.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: CODE,
+        platform: s("Platform", { enum: Object.keys(PLATFORM_LABEL) }),
+        metric: s("What the number counts", { enum: ["views", "likes", "comments", "shares", "saves", "streams", "listeners", "followers", "reach"] }),
+        value: { type: "number", description: "The number (0 or more)" },
+        url: s("Link to the post or video (optional)"),
+        date: DATE("Day the number was read (default today)"),
+      },
+      required: ["code", "platform", "metric", "value"],
+    },
+    async run(ctx, a) {
+      const song = await songByCode(ctx, need(a, "code"));
+      const value = Number(a.value);
+      if (!Number.isFinite(value) || value < 0) throw new ToolError("value must be a number, 0 or more.");
+      const date = str(a, "date");
+      if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new ToolError("date must be YYYY-MM-DD.");
+      check(await ctx.supabase.from("song_metrics").upsert(
+        { song_id: song.id, platform: need(a, "platform"), metric: need(a, "metric"), value: Math.round(value), url: str(a, "url") ?? "", source: "agent", ...(date ? { captured_on: date } : {}) },
+        { onConflict: "song_id,platform,url,metric,captured_on" },
+      ));
+      return { saved: true, url: songUrl(song.code) };
+    },
+  },
   // ───────────── Audits & captions ─────────────
   {
     name: "run_audit",
     title: "Run the audit on a submitted file",
     description:
-      "Runs Zinema's own audit on a submitted file version and saves the result on the song. Master WAV → mix audit (loudness LUFS, true peak, clipping, bit depth, sample rate, phase, silence: measured in code, never estimated). Artwork → artwork audit (size, colour, transparency, plus a look for store-rule problems). Lyrics → lyric review. Get version ids from get_song. Takes up to a minute for a full master. Never state loudness or peak numbers yourself; always take them from this tool.",
+      "Runs Zinema's own audit on a submitted file version and saves the result on the song. Master WAV → mix audit (loudness LUFS, true peak, clipping, bit depth, sample rate, phase, silence: measured in code, never estimated). Artwork → artwork audit (size, colour, transparency, plus a look for store-rule problems). Vertical, lyric video, visualizer or music video → video audit (shape, sharpness, frame rate, length, sound, format, read from the file). Carousel (a Drive folder of slide images) → carousel audit (slide count, sizes, shape). Lyrics → lyric review. Get version ids from get_song. Takes up to a minute for a full master. Never state loudness or peak numbers yourself; always take them from this tool.",
     inputSchema: { type: "object", properties: { version_id: s("File version id from get_song") }, required: ["version_id"] },
     async run(ctx, a) {
       try {

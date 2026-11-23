@@ -5,6 +5,7 @@ import { markAllRead } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
 import { Badge, Empty, PageTitle, VERSION_LABEL } from "@/components/ui";
 import { getSession } from "@/lib/session";
+import { buildStandup } from "@/lib/standup";
 import { KIND_LABEL, fmtDate, type DeliverableKind } from "@/lib/types";
 
 export default function InboxPage() {
@@ -17,7 +18,8 @@ export default function InboxPage() {
 
 async function Inbox() {
   const s = await getSession();
-  const [{ data: notes }, { data: toCheck }, { data: mine }] = await Promise.all([
+  const [standup, { data: notes }, { data: toCheck }, { data: mine }] = await Promise.all([
+    buildStandup(s.supabase),
     s.supabase.from("notifications").select("id, kind, body, read_at, created_at, song:songs(code, title)").order("created_at", { ascending: false }).limit(50),
     // Files waiting for a check on pages where I can check (excluding my own submissions)
     s.supabase
@@ -72,6 +74,31 @@ async function Inbox() {
               ))}
             </ul>
           ) : <Empty>Nothing to fix.</Empty>}
+        </section>
+
+        <section className="card p-4 lg:col-span-2">
+          <h2 className="font-medium">Today&apos;s stand-up <Badge tone={standup.total ? "amber" : "green"}>{standup.total}</Badge></h2>
+          <p className="mb-3 text-xs text-muted">Across your pages: what is close to release, waiting, late or blocked.</p>
+          {standup.total === 0 && <Empty>Nothing is waiting, late or blocked. Nice.</Empty>}
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
+            {standup.sections.filter((sec) => sec.items.length).map((sec) => (
+              <div key={sec.key} className="min-w-0">
+                <p className="eyebrow">{sec.label} · {sec.items.length}</p>
+                <ul className="mt-1.5 space-y-2 text-sm">
+                  {sec.items.slice(0, 8).map((it, i) => (
+                    <li key={i} className="min-w-0">
+                      {it.code ? (
+                        <Link href={`/songs/${it.code}`} className="hover:underline"><span className="font-mono text-xs text-muted">{it.code}</span> {it.title}</Link>
+                      ) : <span>{it.title}</span>}
+                      <span className="text-xs text-muted"> · {it.page}</span>
+                      <p className="text-xs text-zinc-600">{it.text}{it.who ? ` · ${it.who}` : ""}</p>
+                    </li>
+                  ))}
+                  {sec.items.length > 8 && <li className="text-xs text-muted">and {sec.items.length - 8} more</li>}
+                </ul>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="card p-4 lg:col-span-2">

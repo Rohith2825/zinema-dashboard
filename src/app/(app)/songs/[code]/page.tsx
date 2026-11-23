@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   addChecklistItem, addComment, addContentSlot, addCredit, addDistribution, addFormat, advanceSong, assignDeliverable, createTask,
-  generateContentPlan, markSlotLive, removeContentSlot, removeCredit, removeFormat, reviewVersion, saveRights, submitVersion,
+  generateContentPlan, markSlotLive, refreshPerformance, removeContentSlot, removeCredit, removeFormat, reviewVersion, saveRights, submitVersion,
   openSongFolder, toggleChecklistItem, unpublishFormat, publishFormat, updateFormat, updateSong,
 } from "@/app/actions";
 import { ActionForm, Submit } from "@/components/action-form";
@@ -13,6 +13,7 @@ import { Tabs } from "@/components/tabs";
 import { DriveUpload } from "@/components/drive-upload";
 import { AuditPanel, type AuditRun } from "@/components/audit-panel";
 import { CaptionsPanel, type CaptionSet } from "@/components/captions-panel";
+import { latestMetrics, youtubeConfigured } from "@/lib/performance";
 import { folderUrl } from "@/lib/site";
 import { coverSrc } from "@/lib/drive";
 import { Badge, Empty, OwnershipTag, PageDot, VERSION_LABEL, VERSION_TONE, pageShort, type Tone } from "@/components/ui";
@@ -65,7 +66,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
     .maybeSingle();
   if (!song) notFound();
 
-  const [delivR, creditsR, distR, slotsR, tasksR, commentsR, activityR, peopleR, rightsR, formatsR, typesR, captionsR] = await Promise.all([
+  const [delivR, creditsR, distR, slotsR, tasksR, commentsR, activityR, peopleR, rightsR, formatsR, typesR, captionsR, metrics] = await Promise.all([
     db.from("deliverables")
       .select("id, stage, kind, slot, required, assignee_id, checker_id, due_at, deliverable_versions(id, version, status, drive_url, note, submitted_at, submitted_by, reviews(decision, comments, reviewer_id, created_at), audit_runs(verdict, skill, findings, report_md, created_at))")
       .eq("song_id", song.id).order("kind").order("slot"),
@@ -82,6 +83,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
       .eq("song_id", song.id).order("created_at"),
     db.from("format_types").select("kind, label, stage, position").order("position"),
     db.from("song_captions").select("captions, created_at, created_by, created_via").eq("song_id", song.id).order("created_at", { ascending: false }).limit(1),
+    latestMetrics(db, song.id),
   ]);
 
   const people = (peopleR.data ?? []) as Profile[];
@@ -323,6 +325,36 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
                   by={captionsR.data?.[0] ? `${who(captionsR.data[0].created_by)}${captionsR.data[0].created_via === "agent" ? " (through an AI assistant)" : ""}` : undefined}
                 />
               ) },
+              { key: "performance", label: "Numbers", node: <>
+                {metrics.length ? (
+                  <ul className="hairline divide-y divide-black/[0.06] text-sm">
+                    {[...metrics].sort((a, b) => a.platform.localeCompare(b.platform) || a.url.localeCompare(b.url) || b.value - a.value).map((m) => (
+                      <li key={`${m.platform}${m.url}${m.metric}`} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2">
+                        <span className="min-w-0">
+                          <span className="font-medium">{PLATFORM_LABEL[m.platform as Platform] ?? m.platform}</span>{" "}
+                          <span className="text-muted">{m.metric}</span>
+                          {m.url && <> · <a href={m.url} target="_blank" rel="noreferrer" className="text-xs text-brand-700 underline">link</a></>}
+                        </span>
+                        <span className="text-right">
+                          <span className="font-medium tabular-nums">{m.value.toLocaleString("en-IN")}</span>
+                          {m.change_7d !== null && <span className={`ml-2 text-xs tabular-nums ${m.change_7d > 0 ? "text-emerald-700" : "text-muted"}`}>{m.change_7d > 0 ? "+" : ""}{m.change_7d.toLocaleString("en-IN")} in a week</span>}
+                          <span className="ml-2 text-xs text-muted">{fmtDate(m.captured_on, { day: "numeric", month: "short" })}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <Empty>No numbers saved yet.</Empty>}
+                {canWork && (
+                  <ActionForm action={refreshPerformance} className="mt-3">
+                    <input type="hidden" name="song_id" value={song.id} />
+                    <Submit className="btn-ghost" disabled={!youtubeConfigured()}>Get today&apos;s YouTube numbers</Submit>
+                  </ActionForm>
+                )}
+                <p className="mt-2 text-xs text-muted">
+                  {youtubeConfigured() ? "Reads views, likes and comments for every YouTube link marked as published on this song." : "YouTube numbers need a YouTube API key (an admin adds it)."}{" "}
+                  Instagram and other numbers can be saved by Claude or ChatGPT through Connect.
+                </p>
+              </> },
               { key: "tasks", label: "Tasks", count: (tasksR.data ?? []).filter((t) => t.status !== "done").length, node: <>
             <ul className="mb-3 space-y-1 text-sm">
               {(tasksR.data ?? []).map((t) => (

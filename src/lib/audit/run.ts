@@ -1,10 +1,11 @@
 import "server-only";
 import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { DriveError, downloadBytes, downloadFile, exportDocText, getFile } from "@/lib/google-drive";
+import { DriveError, downloadBytes, downloadFile, driveThumbnail, exportDocText, getFile, listFolder, readRange } from "@/lib/google-drive";
 import { KIND_LABEL, type DeliverableKind } from "@/lib/types";
-import { AiError, aiConfigured, reviewArtwork, reviewLyrics, writeCaptions, type Captions, type SongContext } from "./ai";
-import { judgeArtwork, judgeMix, reportMd, verdictOf, type ArtMetrics, type Finding, type Status, type Verdict } from "./judge";
+import { AiError, aiConfigured, reviewArtwork, reviewCarousel, reviewLyrics, reviewVideoFrame, writeCaptions, type Captions, type SongContext } from "./ai";
+import { judgeArtwork, judgeCarousel, judgeMix, judgeVideo, reportMd, verdictOf, type ArtMetrics, type Finding, type Slide, type Status, type Verdict } from "./judge";
+import { NotVideoError, probeVideo } from "./mp4";
 import { docxText, lyricStats } from "./text";
 import { NotWavError, analyzeWav } from "./wav";
 
@@ -13,7 +14,17 @@ export const AUDIT_FOR: Partial<Record<DeliverableKind, { skill: string; label: 
   master_wav: { skill: "mix-audit@1.0", label: "Mix audit" },
   artwork: { skill: "artwork-audit@1.0", label: "Artwork audit" },
   lyrics: { skill: "lyric-review@1.0", label: "Lyric review" },
+  carousel: { skill: "carousel-audit@1.0", label: "Carousel audit" },
+  vertical: { skill: "video-audit@1.0", label: "Video audit" },
+  lyric_video: { skill: "video-audit@1.0", label: "Video audit" },
+  visualizer: { skill: "video-audit@1.0", label: "Video audit" },
+  music_video: { skill: "video-audit@1.0", label: "Video audit" },
+  ai_music_video: { skill: "video-audit@1.0", label: "Video audit" },
 };
+const NO_AI = "not run: the AI reviewer isn't switched on";
+type Opinion = { status: Status; found: string; fix: string };
+const opinion = (check: string, x: Opinion): Finding => ({ check, status: x.status, value: x.found, target: "AI opinion", ...(x.status !== "pass" && x.fix ? { fix: x.fix } : {}) });
+const small = (bytes: Buffer, px: number) => sharp(bytes).flatten({ background: "#ffffff" }).resize(px, px, { fit: "inside", withoutEnlargement: true }).toColourspace("srgb").jpeg({ quality: 82 }).toBuffer();
 
 export class AuditError extends Error {}
 export type AuditResult = { skill: string; verdict: Verdict; findings: Finding[]; report_md: string; metrics: object };
@@ -129,6 +140,75 @@ async function lyricReview(fileId: string, ctx: SongContext): Promise<Omit<Audit
   return { verdict: verdictOf(findings), findings, metrics: { ...(stats ?? {}), language: r.language, scores: { hook: r.hook.score, singability: r.singability.score, wordplay: r.wordplay.score, short_video_fit: r.short_video_fit.score } }, report_md: reportMd("Lyric review", findings, notes) };
 }
 
+async function carouselAudit(fileId: string, rules: object | null, ctx: SongContext): Promise<Omit<AuditResult, "skill">> {
+  const file = await getFile(fileId);
+  const isImage = (f: { mimeType: string }) => /^image\/(jpeg|png|webp)$/.test(f.mimeType);
+  const files = file.mimeType === "application/vnd.google-apps.folder"
+    ? (await listFolder(fileId)).filter(isImage).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+    : isImage(file) ? [file] : [];
+  if (!files.length) throw new AuditError("To audit a carousel, submit the link to the Drive folder that holds the slide images (JPG or PNG, named in order: 1, 2, 3…).");
+  if (files.length > 30) throw new AuditError("That folder has more than 30 images. Submit a folder with only this carousel's slides.");
+  const images: Buffer[] = [], slides: Slide[] = [];
+  for (const f of files) {
+    const bytes = await downloadBytes(f.id, 30 * 1048576);
+    const meta = await sharp(bytes).metadata().catch(() => null);
+    if (!meta?.width || !meta.height) throw new AuditError(`"${f.name}" isn't an image we can open.`);
+    const space = String(meta.space ?? "");
+    slides.push({ name: f.name, width: meta.width, height: meta.height, colour: /rgb/i.test(space) ? "rgb" : space || "unknown" });
+    images.push(bytes);
+  }
+  const findings = judgeCarousel(slides, rules);
+  let notes: string | undefined;
+  const metrics: Record<string, unknown> = { slides };
+  if (!aiConfigured()) findings.push({ check: "Read-through (story, text, mistakes)", status: "info", value: NO_AI, target: "for information" });
+  else {
+    try {
+      const r = await reviewCarousel(await Promise.all(images.slice(0, 20).map((b) => small(b, 768))), ctx);
+      findings.push(opinion("First slide", r.first_slide), opinion("Story", r.story), opinion("Readable text", r.readability), opinion("Mistakes", r.mistakes), opinion("Last slide", r.last_slide), opinion("Consistent look", r.consistency));
+      notes = `### Reviewer's note\n${r.summary}`;
+      metrics.ai_review = r;
+    } catch (e) {
+      if (!(e instanceof AiError)) throw e;
+      findings.push({ check: "Read-through (story, text, mistakes)", status: "info", value: `not run: ${e.message}`, target: "for information" });
+    }
+  }
+  return { verdict: verdictOf(findings), findings, metrics, report_md: reportMd("Carousel audit", findings, notes) };
+}
+
+async function videoAudit(fileId: string, kind: DeliverableKind, rules: object | null, song: SongRow, supabase: SupabaseClient): Promise<Omit<AuditResult, "skill">> {
+  const vertical = kind === "vertical";
+  const file = await getFile(fileId);
+  if (file.mimeType === "application/vnd.google-apps.folder") throw new AuditError("That link is a folder. Submit the link to the video file itself.");
+  const size = Number(file.size ?? 0);
+  let facts;
+  try {
+    facts = await probeVideo((start, end) => readRange(fileId, start, end), size);
+  } catch (e) {
+    if (!(e instanceof NotVideoError)) throw e;
+    const findings: Finding[] = [{ check: "File type", status: "fail", value: e.detected.replace(/^an? /, ""), target: "MP4 or MOV", fix: "Export the video as an MP4 (H.264) and submit that." }];
+    return { verdict: "fail", findings, metrics: {}, report_md: reportMd("Video audit", findings) };
+  }
+  const findings = judgeVideo(facts, rules, vertical, song.duration_ms ? song.duration_ms / 1000 : null);
+  findings.push({ check: "Not checked here", status: "info", value: "loudness of the sound, black or frozen frames, lyric timing", target: "for information" });
+  let notes: string | undefined;
+  const metrics: Record<string, unknown> = { ...facts };
+  if (aiConfigured()) {
+    try {
+      const frame = await driveThumbnail(fileId, 1024);
+      if (frame) {
+        const r = await reviewVideoFrame(await small(frame, 1024), await context(supabase, song), { vertical, lyrics: await songLyrics(supabase, song.id) });
+        findings.push(opinion("Text placement (one frame)", r.text_safe_zone), opinion("Readable text (one frame)", r.readability), opinion("Mistakes (one frame)", r.mistakes), opinion("Picture (one frame)", r.picture));
+        notes = `### Reviewer's note\n${r.summary}\n\nThe AI saw one preview frame only, not the whole video.`;
+        metrics.ai_review = r;
+      } else findings.push({ check: "Frame check", status: "info", value: "not run: Drive hasn't made a preview of this video yet. Run the audit again in a few minutes.", target: "for information" });
+    } catch (e) {
+      if (!(e instanceof AiError) && !(e instanceof DriveError)) throw e;
+      findings.push({ check: "Frame check", status: "info", value: `not run: ${e.message}`, target: "for information" });
+    }
+  } else findings.push({ check: "Frame check (text placement, mistakes)", status: "info", value: NO_AI, target: "for information" });
+  return { verdict: verdictOf(findings), findings, metrics, report_md: reportMd("Video audit", findings, notes) };
+}
+
 /** Runs the audit that matches a submitted file and saves the result. Runs as the signed-in person. */
 export async function runAudit(supabase: SupabaseClient, versionId: string, via: "user" | "agent" = "user"): Promise<AuditResult> {
   const { data: v } = await supabase
@@ -149,7 +229,9 @@ export async function runAudit(supabase: SupabaseClient, versionId: string, via:
   try {
     out = kind === "master_wav" ? await mixAudit(d.drive_file_id, rules, song)
       : kind === "artwork" ? await artworkAudit(d.drive_file_id, rules, await context(supabase, song))
-      : await lyricReview(d.drive_file_id, await context(supabase, song));
+      : kind === "lyrics" ? await lyricReview(d.drive_file_id, await context(supabase, song))
+      : kind === "carousel" ? await carouselAudit(d.drive_file_id, rules, await context(supabase, song))
+      : await videoAudit(d.drive_file_id, kind, rules, song, supabase);
   } catch (e) {
     if (e instanceof DriveError || e instanceof AiError) throw new AuditError(e.message);
     throw e;
