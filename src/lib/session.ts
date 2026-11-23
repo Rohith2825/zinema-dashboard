@@ -19,7 +19,7 @@ export const getSession = cache(async () => {
   };
 
   const [profileRes, membershipsRes, pagesRes, ownerRes, unreadRes, allRes] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, nickname, handle, bio, email, is_org_admin").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("id, full_name, nickname, handle, bio, email, is_org_admin, email_notifications").eq("id", user.id).maybeSingle(),
     supabase.from("page_members").select("page_id, role").eq("user_id", user.id),
     supabase.from("pages").select("id, slug, name, code_prefix, is_main").order("signoff_rank").order("name"),
     supabase.rpc("is_rights_owner"),

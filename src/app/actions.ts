@@ -496,7 +496,7 @@ export async function updateProfile(_: ActionState, fd: FormData): Promise<Actio
   const bio = str(fd, "bio");
   if ((nickname?.length ?? 0) > 40) return fail("Nickname can be up to 40 characters.");
   if ((bio?.length ?? 0) > 300) return fail("Description can be up to 300 characters.");
-  const { error } = await supabase.from("profiles").update({ handle, nickname, bio }).eq("id", uid);
+  const { error } = await supabase.from("profiles").update({ handle, nickname, bio, email_notifications: fd.get("email_notifications") === "on" }).eq("id", uid);
   if (error) return fail(error.message.includes("profiles_handle_key") ? `@${handle} is taken. Try another.` : friendly(error));
   refresh();
   return { ok: "Profile saved." };

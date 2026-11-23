@@ -60,6 +60,13 @@ async function Profile() {
               <textarea id="bio" name="bio" rows={4} maxLength={300} defaultValue={p?.bio ?? ""} placeholder="What you do at Zinema, what to come to you for…" className="input" />
               <p className="mt-1.5 text-xs text-muted">Up to 300 characters. Shown on your card on the Team page.</p>
             </div>
+            <label className="tile flex cursor-pointer items-start gap-3 p-4">
+              <input type="checkbox" name="email_notifications" defaultChecked={p?.email_notifications !== false} className="mt-0.5 h-4 w-4 accent-[#fc7c0f]" />
+              <span>
+                <span className="block text-sm font-medium">Email me about my work</span>
+                <span className="block text-xs text-muted">When you&apos;re tagged, given a task, have a file to check, or your file is approved or sent back. Sent to {p?.email ?? s.user.email}.</span>
+              </span>
+            </label>
             <Submit>Save profile</Submit>
           </ActionForm>
         </section>

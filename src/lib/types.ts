@@ -66,7 +66,7 @@ export const TASK_COLUMNS: { key: TaskStatus; label: string }[] = [
 ];
 
 export type Page = { id: string; slug: string; name: string; code_prefix: string; is_main: boolean };
-export type Profile = { id: string; full_name: string; email: string; is_org_admin: boolean; nickname?: string | null; handle?: string | null; bio?: string | null };
+export type Profile = { id: string; full_name: string; email: string; is_org_admin: boolean; nickname?: string | null; handle?: string | null; bio?: string | null; email_notifications?: boolean };
 
 export type ActionState = { error?: string; ok?: string } | undefined;
 
