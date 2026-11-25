@@ -98,7 +98,7 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
   const formatDeliverables = new Set(formats.map((f) => f.deliverable_id).filter(Boolean));
   // Files that belong to a format are shown inside that format, not in the stage list.
   const deliverables = allDeliverables.filter((d) => !formatDeliverables.has(d.id));
-  const meta = (song.metadata ?? {}) as { language?: string; imported?: boolean; style?: string };
+  const meta = (song.metadata ?? {}) as { language?: string; imported?: boolean; style?: string; theme?: string; vocals?: string };
   const page = song.page as unknown as { name: string; slug: string; code_prefix: string } | null;
   const canWork = s.canWork(song.page_id);
   const canCheck = s.canCheck(song.page_id);
@@ -123,6 +123,8 @@ async function Song({ params }: Pick<PageProps<"/songs/[code]">, "params">) {
               <Badge><PageDot prefix={page?.code_prefix} className="mr-1" />{pageShort(page?.name)}</Badge>
               {meta.language && <Badge>{meta.language}</Badge>}
               {meta.style && <Badge>{meta.style}</Badge>}
+              {meta.theme && <Badge>{meta.theme}</Badge>}
+              {meta.vocals && <Badge>{meta.vocals} vocals</Badge>}
               <Badge tone="violet">{stageLabel(song.current_stage)}</Badge>
               {song.planned_release_date && <Badge tone="amber">Release {fmtDate(song.planned_release_date)}</Badge>}
               {song.duration_ms && <Badge>{Math.floor(song.duration_ms / 60000)}:{String(Math.round((song.duration_ms % 60000) / 1000)).padStart(2, "0")}</Badge>}
